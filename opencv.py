@@ -14,7 +14,7 @@ import shared
 from pprint import pprint
 
 classes = None
-allowed = ['car', 'bicycle', 'dog', 'motorbike', 'umbrella', 'boat', 'pottedplant', 'fire hydrant', 'train', 'bus', 'bowl', 'cup', 'frisbee']
+allowed = ['car', 'bicycle', 'dog', 'motorbike', 'umbrella', 'boat', 'pottedplant', 'fire hydrant', 'train', 'bus', 'bowl', 'cup', 'frisbee', 'bench']
 
 with open(shared.args.classes, 'r') as f:
     classes = [line.strip() for line in f.readlines()]
@@ -101,6 +101,9 @@ def detect(stream):
     name = stream['label']
     name2 = name+'_processed'
     image = shared.framebuffer[name]
+
+    if shared.stopDetection:
+        return None
 
     if name2 in shared.framebuffer:
         commutative_image_diff = get_image_difference(shared.framebuffer[name], shared.framebuffer[name2])

@@ -1,6 +1,7 @@
 from pprint import pprint
 import telegram
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram import Update
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 import shared
 
 bot = None
@@ -14,13 +15,22 @@ def initBot():
 initBot()
 
 
-def echo(bot, update):
+def echo(update: Update, context: CallbackContext):
     """Echo the user message."""
+    global bot
     print('Recieved msg '+update.message.text+' from '+str(update.effective_user.id)+' in chat: '+str(update.effective_chat.id))
 
+    if update.message.text == '/ustop':
+        print('stopping detection')
+        shared.stopDetection = True
+        bot.send_message(chat_id=update.effective_chat.id, text="Stopping detection")
+
+    if update.message.text == '/ustart':
+        shared.stopDetection = False
+        bot.send_message(chat_id=update.effective_chat.id, text="Continue detection")
 
 def begin():
-    updater = Updater(bot.token)
+    updater = Updater(bot.token, use_context=True)
 
     dp = updater.dispatcher
     

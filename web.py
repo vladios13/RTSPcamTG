@@ -1,6 +1,7 @@
 import pprint
 import time
 
+import numpy as np
 from jinja2 import Environment, PackageLoader, select_autoescape
 from sanic import Sanic, response
 from sanic.response import json, html
@@ -75,6 +76,15 @@ async def mainList(request):
 @app.route('/snapshot/<tag>')
 async def tag_handler(request, tag):
     if(tag in shared.framebuffer):
+
+        for stream in shared.config['streams']:
+            if stream['label'] == tag and 'detect_in_polygon' in stream:
+                #pts = np.array(stream['detect_in_polygon'], np.int32)
+                ctr = np.array(stream['detect_in_polygon']).reshape((-1, 1, 2)).astype(np.int32)
+                cv2.drawContours(shared.framebuffer[tag], [ctr], -1, (0, 255, 0), 3)
+
+
+
         _, jpg = cv2.imencode('.jpg', shared.framebuffer[tag])
         return response.raw(jpg, content_type='image/jpeg', headers={'Cache-Control': 'no-store'})
     else:

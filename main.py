@@ -14,7 +14,8 @@ import json
 import shared
 import web
 import opencv
-
+import tg
+import platform
 
 
 
@@ -82,8 +83,9 @@ def loadStreams():
 
 if __name__ == "__main__":
     shared.logger.info('Ultracam startup')
-    nice = os.nice(5)
-    shared.logger.info('nice level: {}'.format(nice))
+    if platform.system() == 'Linux':
+        nice = os.nice(5)
+        shared.logger.info('nice level: {}'.format(nice))
 
     init_processnamehack()
 
@@ -91,7 +93,7 @@ if __name__ == "__main__":
 
     
     threading.Thread(target=opencv.processFrame, name="opencv", daemon=True).start()
-    #tg.begin()
+    tg.begin()
     web.begin()
     print('Main end')
 
