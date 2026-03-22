@@ -1,8 +1,12 @@
+import os
 import cv2
 import threading
 import time
 
 from app import state
+
+# Force RTSP over TCP to avoid RTP packet reordering (bad cseq errors)
+os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'rtsp_transport;tcp'
 
 _stream_threads: list = []
 
@@ -13,7 +17,7 @@ def processStream(name, url):
     if state.args.debug is None:
         counter = 0
         err = 0
-        cap = cv2.VideoCapture(url)
+        cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
         try:
             while True:
                 if state.stopStreams:
@@ -33,7 +37,7 @@ def processStream(name, url):
                         err = 0
                         counter = 0
                         time.sleep(10)
-                        cap = cv2.VideoCapture(url)
+                        cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
         finally:
             cap.release()
             state.logger.debug('Released VideoCapture: ' + name)
