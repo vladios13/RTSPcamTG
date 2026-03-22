@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: camTGrtsp
     ports:
-      - "8000:8000"          # Web UI доступен снаружи
+      - "127.0.0.1:8000:8000"  # Web UI только на localhost
     volumes:
       - ./config.json:/app/config.json  # Конфиг монтируем вне образа
       - ./output:/app/output            # Папка с детекциями
