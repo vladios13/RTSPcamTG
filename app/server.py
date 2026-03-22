@@ -86,6 +86,11 @@ async def configSave(request):
     return response.json(bb)
 
 
+@app.route('/favicon.ico')
+async def favicon(request):
+    return response.empty(status=204)
+
+
 @app.route('/snapshot/<tag>')
 async def snapshot(request, tag):
     if tag in state.framebuffer:
