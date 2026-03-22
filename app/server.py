@@ -110,25 +110,44 @@ async def stats(request):
     return response.html(pprint.pformat(state.frame_stats))
 
 
-@app.route('/munin')
-async def munin(request):
+@app.route('/api/stats')
+async def api_stats(request):
+    return response.json({
+        'processed': state.get_counter('images_processed'),
+        'skipped': state.get_counter('images_skipped'),
+        'avg': zero_division(state.get_counter('images_time'), state.get_counter('images_processed')),
+        'skip_avg': zero_division(state.get_counter('skipped_time'), state.get_counter('images_skipped')),
+        'diff_avg': zero_division(state.get_counter('total_skip_diff'), state.get_counter('images_skipped')),
+        'diff_avg2': zero_division(state.get_counter('total_diff'), state.get_counter('total_processed')),
+        'total': state.get_counter('images_time'),
+        'stream_resets': state.get_counter('stream_resets'),
+        'size': state.get_size(),
+        'streams': list({k: None for k in state.framebuffer if '_' not in k}.keys()),
+    })
+
+
+@app.route('/movement')
+async def movement_page(request):
+    return template('movement.html')
+
+
+@app.route('/api/movement')
+async def api_movement(request):
+    window = int(request.args.get('minutes', 30)) * 60
+    now = time.time()
     result = {}
-    for k, v in state.frame_stats.items():
-        if len(v) > 1000:
-            state.logger.info('Trimming to 1000')
-            state.frame_stats[k] = v[-1000:]
-
-    for k, v in state.frame_stats.items():
-        frames = 0
-        diff = 0
-        for stat in v:
-            if time.time() - stat['time'] < 60 * 5:
-                frames += 1
-                diff += stat['stat']
-
-        result[k] = zero_division(diff, frames)
-
-    return template('munin.html', stats=result)
+    for cam, entries in state.frame_stats.items():
+        # Trim stored data to last 30 min
+        trimmed = [e for e in entries if now - e['time'] <= window]
+        state.frame_stats[cam] = trimmed
+        # Downsample: max 300 points per camera
+        step = max(1, len(trimmed) // 300)
+        sampled = trimmed[::step]
+        result[cam] = [
+            {'t': round(e['time'] * 1000), 'v': round(e['stat'] * 1000, 3)}
+            for e in sampled
+        ]
+    return response.json(result)
 
 
 def begin():
