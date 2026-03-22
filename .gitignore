@@ -9,7 +9,7 @@ __pycache__/
 
 *.log
 
-cfg/yolov3.weights
+cfg/*.weights
 config.json
 
 *.jpg
