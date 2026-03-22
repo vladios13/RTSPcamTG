@@ -1,0 +1,5 @@
+opencv-python==4.5.5.64
+jinja2
+sanic==19.12.5
+shapely
+aiogram==3.7.0
