@@ -70,6 +70,10 @@
             <div class="stat-value" id="s-resets">{{stream_resets}}</div>
           </div>
           <div class="col-6 col-md-3 mb-2">
+            <div class="small text-muted">Ошибок подключения</div>
+            <div class="stat-value" id="s-connect-failures">{{connect_failures}}</div>
+          </div>
+          <div class="col-6 col-md-3 mb-2">
             <div class="small text-muted">Framebuffer</div>
             <div class="stat-value" id="s-size">{{size}} MB</div>
           </div>
@@ -133,7 +137,8 @@
         document.getElementById('s-diff').textContent       = d.diff_avg  ? d.diff_avg.toFixed(5)  : '—';
         document.getElementById('s-avg').textContent        = d.avg       ? d.avg.toFixed(3) + 's'  : '—';
         document.getElementById('s-skip-avg').textContent   = d.skip_avg  ? d.skip_avg.toFixed(3) + 's' : '—';
-        document.getElementById('s-resets').textContent     = d.stream_resets;
+        document.getElementById('s-resets').textContent          = d.stream_resets;
+        document.getElementById('s-connect-failures').textContent = d.connect_failures;
         document.getElementById('s-size').textContent       = d.size + ' MB';
       })
       .catch(function() {});

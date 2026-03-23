@@ -45,6 +45,7 @@ async def mainList(request):
         diff_avg2=zero_division(state.get_counter('total_diff'), state.get_counter('total_processed')),
         total=state.get_counter('images_time'),
         stream_resets=state.get_counter('stream_resets'),
+        connect_failures=state.get_counter('stream_connect_failures'),
         size=state.get_size(),
     )
 
@@ -137,6 +138,7 @@ async def api_stats(request):
         'diff_avg2': zero_division(state.get_counter('total_diff'), state.get_counter('total_processed')),
         'total': state.get_counter('images_time'),
         'stream_resets': state.get_counter('stream_resets'),
+        'connect_failures': state.get_counter('stream_connect_failures'),
         'size': state.get_size(),
         'streams': list({k: None for k in state.framebuffer if '_' not in k}.keys()),
     })
