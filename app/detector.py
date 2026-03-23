@@ -89,7 +89,8 @@ def draw_prediction(img, class_id, confidence, x, y, x_plus_w, y_plus_h):
 
 def perform_alarm(name, image, alarm):
     state.logger.debug('ALARM!')
-    now = datetime.datetime.now()
+    MSK = datetime.timezone(datetime.timedelta(hours=3))
+    now = datetime.datetime.now(MSK)
     directory = os.path.join('alarm', name, now.strftime('%Y-%m-%d'))
     path = os.path.join(directory, now.strftime('%Y-%m-%d_%H_%M_%S_%f') + '.jpg')
 
