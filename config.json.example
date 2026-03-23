@@ -43,5 +43,7 @@
   }
  ],
  "tg_token": "TG_TOKEN",
- "tg_chat": CHAT_ID
+ "tg_chat": CHAT_ID,
+ "stream_startup_delay_s": 2,
+ "_stream_startup_delay_s_comment": "Задержка в секундах между запуском потоков при старте. Предотвращает одновременные FFmpeg RTSP-handshake, которые NVR может дропать. Увеличьте до 3-5 при медленном NVR или более чем 2 камерах."
 }
