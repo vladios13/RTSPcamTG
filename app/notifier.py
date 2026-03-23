@@ -13,6 +13,7 @@ _bot: Optional[Bot] = None
 _dp: Optional[Dispatcher] = None
 _loop: Optional[asyncio.AbstractEventLoop] = None
 _tg_thread: Optional[threading.Thread] = None
+_queue: Optional[asyncio.Queue] = None
 
 
 def initBot():
@@ -38,10 +39,28 @@ def initBot():
         await message.answer("Continue detection")
 
 
+async def _sender_worker():
+    while True:
+        task = await _queue.get()
+        try:
+            await _bot.send_photo(
+                chat_id=task['chat_id'],
+                photo=FSInputFile(task['photo_path']),
+                caption=task['caption'],
+                parse_mode=ParseMode.HTML,
+            )
+        except Exception as e:
+            state.logger.error('Telegram send_photo failed: %s', e)
+        finally:
+            _queue.task_done()
+
+
 def _run_bot_loop():
-    global _loop
+    global _loop, _queue
     _loop = asyncio.new_event_loop()
     asyncio.set_event_loop(_loop)
+    _queue = asyncio.Queue(maxsize=50)
+    asyncio.ensure_future(_sender_worker(), loop=_loop)
     state.logger.info('Aiogram event loop created, starting polling...')
     try:
         _loop.run_until_complete(_dp.start_polling(_bot, handle_signals=False))
@@ -90,19 +109,13 @@ def send_alarm_photo(chat_id, photo_path: str, caption: str):
         state.logger.warning('send_alarm_photo: event loop не запущен — polling упал? Смотри ошибки выше')
         return
 
-    future = asyncio.run_coroutine_threadsafe(
-        _bot.send_photo(
-            chat_id=chat_id,
-            photo=FSInputFile(photo_path),
-            caption=caption,
-            parse_mode=ParseMode.HTML,
-        ),
-        _loop,
-    )
-    try:
-        future.result(timeout=15)
-    except Exception as e:
-        state.logger.error('Telegram send_photo failed: %s', e)
+    async def _enqueue():
+        try:
+            _queue.put_nowait({'chat_id': chat_id, 'photo_path': photo_path, 'caption': caption})
+        except asyncio.QueueFull:
+            state.logger.warning('send_alarm_photo: queue full, dropping alert')
+
+    asyncio.run_coroutine_threadsafe(_enqueue(), _loop)
 
 
 initBot()
