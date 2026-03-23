@@ -23,15 +23,27 @@ def processStream(name, url):
                 if state.stopStreams:
                     state.logger.debug('Exiting thread name: ' + name)
                     break
+                if not cap.isOpened():
+                    state.logger.warning('Stream %s: cap not opened, reconnecting...', name)
+                    cap.release()
+                    time.sleep(5)
+                    cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
+                    err = 0
+                    counter = 0
+                    state.increase_counter('stream_resets')
+                    continue
                 ret, frame = cap.read()
                 if ret:
                     counter += 1
+                    err = 0
                     state.framebuffer[name] = frame
                 else:
-                    state.logger.debug('Not recieved frame #' + str(counter) + ' on name: ' + name)
                     err += 1
-                    if err > 50:
-                        state.logger.debug('Trying to restart stream')
+                    if err % 10 == 1:
+                        state.logger.debug('Stream %s: no frame (err=%d)', name, err)
+                    time.sleep(0.5)
+                    if err > 20:
+                        state.logger.warning('Stream %s: %d consecutive errors, reconnecting...', name, err)
                         state.increase_counter('stream_resets')
                         cap.release()
                         err = 0
