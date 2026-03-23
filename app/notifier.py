@@ -56,6 +56,18 @@ def _run_bot_loop():
     state.logger.info('Aiogram bot loop exited')
 
 
+def stop():
+    """Останавливает текущий polling если он запущен."""
+    global _loop, _tg_thread
+    if _loop is not None and _loop.is_running() and _dp is not None:
+        try:
+            asyncio.run_coroutine_threadsafe(_dp.stop_polling(), _loop)
+            if _tg_thread is not None:
+                _tg_thread.join(timeout=5)
+        except Exception as e:
+            state.logger.warning('notifier.stop(): %s', e)
+
+
 def begin():
     global _tg_thread
     if _bot is None:
