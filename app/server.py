@@ -96,12 +96,13 @@ async def favicon(request):
 @app.route('/snapshot/<tag>')
 async def snapshot(request, tag):
     if tag in state.framebuffer:
+        frame = state.framebuffer[tag].copy()
         for s in state.config['streams']:
             if s['label'] == tag and 'detect_in_polygon' in s:
                 ctr = np.array(s['detect_in_polygon']).reshape((-1, 1, 2)).astype(np.int32)
-                cv2.drawContours(state.framebuffer[tag], [ctr], -1, (0, 255, 0), 3)
+                cv2.drawContours(frame, [ctr], -1, (0, 255, 0), 3)
 
-        _, jpg = cv2.imencode('.jpg', state.framebuffer[tag])
+        _, jpg = cv2.imencode('.jpg', frame)
         return response.raw(jpg, content_type='image/jpeg', headers={'Cache-Control': 'no-store'})
     else:
         return response.html('No image')
