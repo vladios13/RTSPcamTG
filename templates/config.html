@@ -16,63 +16,12 @@
     .navbar-brand { font-weight: 700; letter-spacing: 1px; }
     .config-card { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); padding: 1.5rem; margin-bottom: 1.5rem; }
     .stream-item { display: flex; justify-content: space-between; align-items: center; gap: .75rem; }
-    .stream-item .stream-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .stream-item .delete { flex-shrink: 0; }
+    .stream-item .stream-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .stream-item .stream-actions { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
+    #polygon-canvas { cursor: crosshair; display: block; max-width: 100%; }
+    #canvas-wrap { position: relative; background: #000; line-height: 0; width: 100%; }
+    .point-hint { font-size: .8rem; color: #6c757d; }
   </style>
-  <script>
-    $(document).ready(function () {
-
-      $.getJSON('/config.json', function (data) {
-        $('#tg_token').val(data.tg_token);
-        $('#tg_chat').val(data.tg_chat);
-
-        $.each(data.streams, function (key, item) {
-          addStreamRow(item.label, item.url);
-        });
-      });
-
-      function addStreamRow(label, url) {
-        var row = $('<li class="list-group-item stream-item"></li>')
-          .attr('data-label', label)
-          .attr('data-url', url);
-        row.append('<span class="stream-label"><strong>' + label + '</strong> — <span class="text-muted">' + url + '</span></span>');
-        row.append('<a href="#" class="delete text-danger small">Удалить</a>');
-        row.find('.delete').click(function (e) {
-          e.preventDefault();
-          $(this).closest('li').remove();
-        });
-        $('#streams').append(row);
-      }
-
-      $('#btn_Save').click(function (e) {
-        e.preventDefault();
-        var config = {
-          tg_token: $('#tg_token').val(),
-          tg_chat: $('#tg_chat').val(),
-          streams: [],
-        };
-        $('#streams li').each(function () {
-          config.streams.push({ label: $(this).attr('data-label'), url: $(this).attr('data-url'), ignore: [] });
-        });
-
-        $.ajax({
-          contentType: 'application/json',
-          data: JSON.stringify(config),
-          dataType: 'json',
-          processData: false,
-          type: 'POST',
-          url: '/config.save',
-          success: function () {
-            $('#save-ok').fadeIn().delay(2000).fadeOut();
-          },
-          error: function () {
-            alert('Ошибка сохранения');
-          },
-        });
-      });
-
-    });
-  </script>
 </head>
 <body>
 
@@ -106,5 +55,368 @@
 
 </div>
 
+<!-- Polygon editor modal -->
+<div class="modal fade" id="polygonModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Зона детекции: <span id="modal-cam-name"></span></h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <p class="point-hint mb-2">
+          Кликайте по изображению чтобы поставить точки зоны. Ровно <strong>4 точки</strong>.
+        </p>
+        <div id="canvas-wrap">
+          <canvas id="polygon-canvas"></canvas>
+        </div>
+        <div class="mt-2 d-flex justify-content-between align-items-center">
+          <span class="point-hint" id="point-count">Точек: 0 / 4</span>
+          <button type="button" class="btn btn-sm btn-outline-danger" id="btn-clear-zone">Очистить</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-primary" id="btn-save-zone" disabled>Сохранить зону</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+$(document).ready(function () {
+
+  // ── Load config ──────────────────────────────────────────────
+  $.getJSON('/config.json', function (data) {
+    $('#tg_token').val(data.tg_token);
+    $('#tg_chat').val(data.tg_chat);
+    $.each(data.streams, function (key, item) {
+      addStreamRow(item.label, item.url, item.detect_in_polygon || null);
+    });
+  });
+
+  // ── Stream row ───────────────────────────────────────────────
+  function addStreamRow(label, url, polygon) {
+    var row = $('<li class="list-group-item stream-item"></li>')
+      .attr('data-label', label)
+      .attr('data-url', url)
+      .attr('data-polygon', polygon ? JSON.stringify(polygon) : '');
+
+    var badge = polygon && polygon.length === 4
+      ? ' <span class="badge badge-success ml-1">Зона</span>'
+      : ' <span class="badge badge-secondary ml-1 badge-zone-empty">Нет зоны</span>';
+
+    row.append('<span class="stream-label"><strong>' + label + '</strong>' + badge +
+               '<br><small class="text-muted">' + url + '</small></span>');
+
+    var actions = $('<span class="stream-actions"></span>');
+    actions.append(
+      $('<button class="btn btn-sm btn-outline-secondary zone-btn">Зона</button>')
+        .attr('data-label', label)
+    );
+    actions.append(
+      $('<a href="#" class="delete text-danger small">Удалить</a>')
+    );
+    row.append(actions);
+
+    row.find('.delete').click(function (e) {
+      e.preventDefault();
+      $(this).closest('li').remove();
+    });
+
+    row.find('.zone-btn').click(function (e) {
+      e.preventDefault();
+      openPolygonEditor($(this).attr('data-label'));
+    });
+
+    $('#streams').append(row);
+  }
+
+  // ── Global save ──────────────────────────────────────────────
+  $('#btn_Save').click(function (e) {
+    e.preventDefault();
+    var config = {
+      tg_token: $('#tg_token').val(),
+      tg_chat: $('#tg_chat').val(),
+      streams: [],
+    };
+    $('#streams li').each(function () {
+      var streamObj = {
+        label: $(this).attr('data-label'),
+        url: $(this).attr('data-url'),
+        ignore: [],
+      };
+      var raw = $(this).attr('data-polygon');
+      if (raw) {
+        try { streamObj.detect_in_polygon = JSON.parse(raw); } catch (e) {}
+      }
+      config.streams.push(streamObj);
+    });
+
+    $.ajax({
+      contentType: 'application/json',
+      data: JSON.stringify(config),
+      dataType: 'json',
+      processData: false,
+      type: 'POST',
+      url: '/config.save',
+      success: function () {
+        $('#save-ok').fadeIn().delay(2000).fadeOut();
+      },
+      error: function () { alert('Ошибка сохранения'); },
+    });
+  });
+
+  // ── Polygon editor ───────────────────────────────────────────
+  var activeLabel = null;
+  var points = [];          // [{cx, cy}, ...] in canvas space
+  var frameW = 1, frameH = 1;
+  var canvasImg = new Image();
+
+  var pendingExistingPts = [];
+
+  function openPolygonEditor(label) {
+    activeLabel = label;
+    points = [];
+
+    $('#modal-cam-name').text(label);
+
+    // Load existing polygon from row
+    var row = $('#streams li[data-label="' + label + '"]');
+    var existing = row.attr('data-polygon');
+    pendingExistingPts = [];
+    if (existing) {
+      try { pendingExistingPts = JSON.parse(existing); } catch (e) {}
+    }
+
+    canvasImg = new Image();
+    canvasImg.src = '/snapshot/raw/' + label + '?' + Date.now();
+
+    $('#polygonModal').modal('show');
+  }
+
+  // Load canvas only after modal animation completes — wrap.clientWidth is correct here
+  $('#polygonModal').on('shown.bs.modal', function () {
+    var canvas = document.getElementById('polygon-canvas');
+    var wrap = document.getElementById('canvas-wrap');
+
+    function renderCanvas() {
+      var maxW = wrap.clientWidth;
+      var scale = maxW / canvasImg.naturalWidth;
+      canvas.width  = Math.round(canvasImg.naturalWidth  * scale);
+      canvas.height = Math.round(canvasImg.naturalHeight * scale);
+      frameW = canvasImg.naturalWidth;
+      frameH = canvasImg.naturalHeight;
+
+      if (pendingExistingPts.length === 4) {
+        points = pendingExistingPts.map(function (p) {
+          return { cx: p[0] * scale, cy: p[1] * scale };
+        });
+      }
+
+      redraw();
+    }
+
+    if (canvasImg.complete && canvasImg.naturalWidth > 0) {
+      renderCanvas();
+    } else {
+      canvasImg.onload = renderCanvas;
+    }
+  });
+
+  function redraw() {
+    var canvas = document.getElementById('polygon-canvas');
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(canvasImg, 0, 0, canvas.width, canvas.height);
+
+    if (points.length === 0) {
+      updateUI();
+      return;
+    }
+
+    // Draw filled polygon (semi-transparent)
+    ctx.beginPath();
+    ctx.moveTo(points[0].cx, points[0].cy);
+    for (var i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i].cx, points[i].cy);
+    }
+    if (points.length === 4) ctx.closePath();
+    ctx.fillStyle = 'rgba(0, 200, 100, 0.15)';
+    ctx.fill();
+
+    // Draw edges
+    ctx.beginPath();
+    ctx.moveTo(points[0].cx, points[0].cy);
+    for (var j = 1; j < points.length; j++) {
+      ctx.lineTo(points[j].cx, points[j].cy);
+    }
+    if (points.length === 4) ctx.closePath();
+    ctx.strokeStyle = '#00e676';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Draw vertices
+    points.forEach(function (p, idx) {
+      ctx.beginPath();
+      ctx.arc(p.cx, p.cy, 6, 0, 2 * Math.PI);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      ctx.strokeStyle = '#00e676';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Point number
+      ctx.fillStyle = '#00e676';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText(idx + 1, p.cx + 9, p.cy - 5);
+    });
+
+    updateUI();
+  }
+
+  function updateUI() {
+    var n = points.length;
+    $('#point-count').text('Точек: ' + n + ' / 4');
+    $('#btn-save-zone').prop('disabled', n !== 4);
+  }
+
+  // ── Drag state ───────────────────────────────────────────────
+  var POINT_RADIUS = 10;   // px — hit area for grabbing a vertex
+  var dragPointIdx = -1;   // index of point being dragged (-1 = none)
+  var dragAll = false;     // dragging whole polygon
+  var dragStart = null;    // {cx, cy} mouse position at drag start
+  var pointsSnap = null;   // copy of points at drag start
+
+  function getCanvasPos(e) {
+    var rect = document.getElementById('polygon-canvas').getBoundingClientRect();
+    return { cx: e.clientX - rect.left, cy: e.clientY - rect.top };
+  }
+
+  function hitPointIndex(pos) {
+    for (var i = 0; i < points.length; i++) {
+      var dx = points[i].cx - pos.cx;
+      var dy = points[i].cy - pos.cy;
+      if (Math.sqrt(dx * dx + dy * dy) <= POINT_RADIUS) return i;
+    }
+    return -1;
+  }
+
+  function isInsidePolygon(pos) {
+    if (points.length < 4) return false;
+    var canvas = document.getElementById('polygon-canvas');
+    var ctx = canvas.getContext('2d');
+    ctx.beginPath();
+    ctx.moveTo(points[0].cx, points[0].cy);
+    for (var i = 1; i < points.length; i++) ctx.lineTo(points[i].cx, points[i].cy);
+    ctx.closePath();
+    return ctx.isPointInPath(pos.cx, pos.cy);
+  }
+
+  var canvas = document.getElementById('polygon-canvas');
+
+  canvas.addEventListener('mousedown', function (e) {
+    var pos = getCanvasPos(e);
+    var idx = hitPointIndex(pos);
+    if (idx !== -1) {
+      dragPointIdx = idx;
+      dragStart = pos;
+      pointsSnap = points.map(function (p) { return { cx: p.cx, cy: p.cy }; });
+      e.preventDefault();
+    } else if (isInsidePolygon(pos)) {
+      dragAll = true;
+      dragStart = pos;
+      pointsSnap = points.map(function (p) { return { cx: p.cx, cy: p.cy }; });
+      e.preventDefault();
+    }
+  });
+
+  canvas.addEventListener('mousemove', function (e) {
+    var pos = getCanvasPos(e);
+
+    // Update cursor
+    if (dragPointIdx !== -1 || dragAll) {
+      canvas.style.cursor = 'grabbing';
+    } else if (hitPointIndex(pos) !== -1) {
+      canvas.style.cursor = 'grab';
+    } else if (isInsidePolygon(pos)) {
+      canvas.style.cursor = 'move';
+    } else {
+      canvas.style.cursor = points.length < 4 ? 'crosshair' : 'default';
+    }
+
+    if (dragPointIdx !== -1) {
+      points[dragPointIdx] = { cx: pos.cx, cy: pos.cy };
+      redraw();
+    } else if (dragAll && dragStart) {
+      var dx = pos.cx - dragStart.cx;
+      var dy = pos.cy - dragStart.cy;
+      points = pointsSnap.map(function (p) { return { cx: p.cx + dx, cy: p.cy + dy }; });
+      redraw();
+    }
+  });
+
+  canvas.addEventListener('mouseup', function () {
+    dragPointIdx = -1;
+    dragAll = false;
+    dragStart = null;
+    pointsSnap = null;
+  });
+
+  canvas.addEventListener('mouseleave', function () {
+    dragPointIdx = -1;
+    dragAll = false;
+    dragStart = null;
+    pointsSnap = null;
+  });
+
+  // Canvas click — add new point only when not dragging and < 4 points
+  canvas.addEventListener('click', function (e) {
+    if (points.length >= 4) return;
+    if (dragPointIdx !== -1 || dragAll) return;
+    var pos = getCanvasPos(e);
+    if (hitPointIndex(pos) !== -1) return;
+    points.push(pos);
+    redraw();
+  });
+
+  // Clear
+  $('#btn-clear-zone').click(function () {
+    points = [];
+    redraw();
+  });
+
+  // Save zone → write back to <li> data-polygon
+  $('#btn-save-zone').click(function () {
+    var scaleX = frameW / document.getElementById('polygon-canvas').width;
+    var scaleY = frameH / document.getElementById('polygon-canvas').height;
+    var framePoints = points.map(function (p) {
+      return [Math.round(p.cx * scaleX), Math.round(p.cy * scaleY)];
+    });
+
+    var row = $('#streams li[data-label="' + activeLabel + '"]');
+    row.attr('data-polygon', JSON.stringify(framePoints));
+
+    // Update badge
+    row.find('.badge').removeClass('badge-secondary badge-success badge-zone-empty')
+       .addClass('badge-success').text('Зона');
+
+    $('#polygonModal').modal('hide');
+  });
+
+  // Reset on close
+  $('#polygonModal').on('hidden.bs.modal', function () {
+    points = [];
+    activeLabel = null;
+    dragPointIdx = -1;
+    dragAll = false;
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.style.cursor = 'crosshair';
+    updateUI();
+  });
+
+});
+</script>
 </body>
 </html>

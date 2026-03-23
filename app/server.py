@@ -77,11 +77,12 @@ async def configSave(request):
 
     state.framebuffer = {}
 
+    notifier.stop()
     notifier.initBot()
     notifier.begin()
 
     with open('config.json', 'w') as file:
-        file.write(json_lib.dumps(state.config))
+        file.write(json_lib.dumps(state.config, indent=2, ensure_ascii=False))
 
     return response.json(bb)
 
@@ -103,6 +104,21 @@ async def snapshot(request, tag):
         return response.raw(jpg, content_type='image/jpeg', headers={'Cache-Control': 'no-store'})
     else:
         return response.html('No image')
+
+
+@app.route('/snapshot/raw/<tag>')
+async def snapshot_raw(request, tag):
+    if tag in state.framebuffer:
+        frame = state.framebuffer[tag].copy()
+        h, w = frame.shape[:2]
+        _, jpg = cv2.imencode('.jpg', frame)
+        return response.raw(jpg, content_type='image/jpeg', headers={
+            'Cache-Control': 'no-store',
+            'X-Frame-Width': str(w),
+            'X-Frame-Height': str(h),
+        })
+    else:
+        return response.html('No image', status=404)
 
 
 @app.route('/stats')
