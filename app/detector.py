@@ -247,7 +247,7 @@ def checkAlarm(name, point, confidence):
 
     Считается повтором если:
       - совпадает класс объекта (name)
-      - объект находится в радиусе 15px от предыдущего (Manhattan distance)
+      - объект находится в радиусе 30px от предыдущего (Manhattan distance)
 
     Возвращает True если алерт нужно отправить, False если подавить.
     """
@@ -259,8 +259,9 @@ def checkAlarm(name, point, confidence):
 
     for alarm in notified:
         if (alarm['name'] == name
-                and abs(alarm['point'][0] - point[0]) + abs(alarm['point'][1] - point[1]) < 15):
-            state.logger.debug('Treating incoming alarm %s %.2f as repeat of previous', name, confidence)
+                and abs(alarm['point'][0] - point[0]) + abs(alarm['point'][1] - point[1]) < 30):
+            state.logger.debug('Antispam: suppressed %s conf=%.2f at (%d,%d), repeat within %ds window',
+                               name, confidence, point[0], point[1], WINDOW)
             return False
 
     notified.append({'name': name, 'point': point, 'confidence': confidence, 'time': now})
