@@ -105,7 +105,8 @@ def add_framestat(name, stat):
     if name in frame_stats:
         data = frame_stats[name]
     data.append({'time': time.time(), 'stat': stat})
-    frame_stats[name] = data
+    # Ограничиваем буфер последними 3 часами (~2 точки/сек × 10800 сек = 21600 записей)
+    frame_stats[name] = data[-21600:]
 
 
 def get_size():
