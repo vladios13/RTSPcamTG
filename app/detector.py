@@ -43,6 +43,7 @@ def init_model():
     global net
     state.logger.info('Loading YOLO model: %s + %s', state.args.weights, state.args.config)
     net = cv2.dnn.readNet(state.args.weights, state.args.config)
+    state.logger.info('YOLO model loaded successfully')
     try:
         net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
         net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
@@ -73,7 +74,7 @@ def save_bounded_image(image, class_id, confidence, x, y, x_plus_w, y_plus_h):
         datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S_%f') +
         '_conf' + '{:.2f}'.format(confidence) + '.jpg'
     )
-    state.logger.debug('Saving bounding box: ' + filename)
+    state.logger.debug('Saving bounding box: %s', filename)
     roi = image[y:y_plus_h, x:x_plus_w]
     if roi.any():
         if not str2bool(state.args.invertcolor):
@@ -89,7 +90,6 @@ def draw_prediction(img, class_id, confidence, x, y, x_plus_w, y_plus_h):
 
 
 def perform_alarm(name, image, alarm):
-    state.logger.debug('ALARM!')
     MSK = datetime.timezone(datetime.timedelta(hours=3))
     now = datetime.datetime.now(MSK)
     directory = os.path.join('alarm', name, now.strftime('%Y-%m-%d'))
@@ -98,8 +98,8 @@ def perform_alarm(name, image, alarm):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    state.logger.debug('writing to path: ' + path)
     cv2.imwrite(path, image)
+    state.logger.warning('[ALARM] cam=%s objects=%d path=%s', name, len(alarm), path)
 
     timestamp_str = now.strftime('%Y-%m-%d %H:%M:%S')
     object_lines = '\n'.join('  ' + line for line in alarm)
@@ -150,7 +150,6 @@ def detect(stream):
 
     if name2 in state.framebuffer:
         commutative_image_diff = get_image_difference(state.framebuffer[name], state.framebuffer[name2])
-        state.logger.debug('frame diff: %.6f', commutative_image_diff)
         state.increase_counter('total_diff', commutative_image_diff)
         state.increase_counter('total_processed')
         state.add_framestat(name, commutative_image_diff)
@@ -158,7 +157,7 @@ def detect(stream):
         # Порог 0.005 соответствует ~1.3/255 средней разнице пикселей
         if commutative_image_diff < 0.005:
             state.increase_counter('total_skip_diff', commutative_image_diff)
-            state.logger.debug('skipping frame (no significant change)')
+            state.logger.debug('[%s] skipping frame: diff=%.4f (below threshold)', name, commutative_image_diff)
             return None
 
     state.framebuffer[name2] = image
@@ -227,8 +226,8 @@ def detect(stream):
                 # Объект вне зоны — рисуем зелёный кружок, не уведомляем
                 cv2.circle(image, point_loc, 5, (0, 255, 0), -1)
                 state.logger.debug('Found %s outside detection zone, skipping', alarm_object_name)
-        else:
-            state.logger.debug('Found ' + alarm_object_name + ' ignoring')
+        elif alarm_object_name in allowed:
+            state.logger.debug('Ignored: %s (in allowed list)', alarm_object_name)
 
     if str2bool(state.args.invertcolor):
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
@@ -269,10 +268,10 @@ def checkAlarm(name, point, confidence):
 
 
 def processFrame():
+    state.logger.info('processFrame started, monitoring %d stream(s)', len(state.config['streams']))
     while not state.stopProcess:
         for stream_cfg in state.config['streams']:
             if stream_cfg['label'] in state.framebuffer:
-                state.logger.debug('Processing frame named: ' + stream_cfg['label'])
                 begin = time.time()
 
                 framed = detect(stream_cfg)
@@ -281,7 +280,7 @@ def processFrame():
                     took = time.time() - begin
                     state.increase_counter('images_processed')
                     state.increase_counter('images_time', took)
-                    state.logger.debug('detection took: ' + str(took) + ' seconds')
+                    state.logger.debug('[%s] detection took: %.3fs', stream_cfg['label'], took)
                 else:
                     took = time.time() - begin
                     state.increase_counter('images_skipped')
