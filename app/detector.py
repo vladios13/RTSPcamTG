@@ -12,13 +12,11 @@ from app import state
 from app import notifier
 
 classes = None
-allowed = [
-    'car', 'bicycle', 'dog', 'motorbike', 'umbrella', 'boat', 'pottedplant',
-    'fire hydrant', 'train', 'bus', 'bowl', 'cup', 'frisbee', 'bench',
-    'tvmonitor', 'sports ball', 'bottle', 'bird', 'truck', 'banana',
-    'surfboard', 'refrigerator', 'sheep', 'traffic light', 'aeroplane',
-    'chair', 'diningtable', 'diningtable', 'suitcase', 'backpack',
-    'vase',
+ignored_classes = [
+    'tvmonitor', 'sports ball', 'bottle', 'bird', 'truck', 'bicycle', 'banana', 'surfboard',
+    'refrigerator', 'sheep', 'traffic light', 'aeroplane', 'motorbike', 'umbrella', 'chair',
+    'boat', 'pottedplant', 'fire hydrant', 'train', 'bus', 'bowl', 'cup', 'frisbee', 'bench',
+    'diningtable', 'suitcase', 'backpack', 'vase',
 ]
 
 with open(state.args.classes, 'r') as f:
@@ -197,7 +195,7 @@ def detect(stream):
     alarm = []
     polygon = None
 
-    if 'detect_in_polygon' in stream:
+    if stream.get('detect_in_polygon'):
         polygon = Polygon(stream['detect_in_polygon'])
 
     orgImage = image.copy()
@@ -215,7 +213,7 @@ def detect(stream):
         point = Point(*point_loc)
 
         alarm_object_name = str(classes[class_ids[idx]])
-        if alarm_object_name not in allowed and checkAlarm(alarm_object_name, point_loc, confidences[idx]):
+        if alarm_object_name not in ignored_classes and checkAlarm(alarm_object_name, point_loc, confidences[idx]):
             in_zone = polygon is None or polygon.contains(point)
             if in_zone:
                 # Объект внутри зоны — алерт
@@ -226,8 +224,8 @@ def detect(stream):
                 # Объект вне зоны — рисуем зелёный кружок, не уведомляем
                 cv2.circle(image, point_loc, 5, (0, 255, 0), -1)
                 state.logger.debug('Found %s outside detection zone, skipping', alarm_object_name)
-        elif alarm_object_name in allowed:
-            state.logger.debug('Ignored: %s (in allowed list)', alarm_object_name)
+        elif alarm_object_name in ignored_classes:
+            state.logger.debug('Ignored: %s (in ignored_classes)', alarm_object_name)
 
     if str2bool(state.args.invertcolor):
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
