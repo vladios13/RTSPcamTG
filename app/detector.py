@@ -238,21 +238,27 @@ def detect(stream):
 
 
 def checkAlarm(name, point, confidence):
+    """
+    Антиспам алертов.
+
+    Подавляет повторные уведомления об одном и том же объекте
+    в одном месте в течение "WINDOW" секунд.
+
+    Считается повтором если:
+      - совпадает класс объекта (name)
+      - объект находится в радиусе 15px от предыдущего (Manhattan distance)
+
+    Возвращает True если алерт нужно отправить, False если подавить.
+    """
     global notified
     now = time.time()
-    WINDOW = 60 * 30
+    WINDOW = 60 * 5  # Окно антиспама: 5 минут
 
-    # Удаляем просроченные записи чтобы список не рос бесконечно
     notified = [a for a in notified if now - a['time'] < WINDOW]
-
-    if confidence > 0.9:
-        state.logger.debug('Always allow high confidence')
-        return True
 
     for alarm in notified:
         if (alarm['name'] == name
-                and abs(alarm['point'][0] - point[0]) + abs(alarm['point'][1] - point[1]) < 15
-                and confidence - alarm['confidence'] < 10):
+                and abs(alarm['point'][0] - point[0]) + abs(alarm['point'][1] - point[1]) < 15):
             state.logger.debug('Treating incoming alarm %s %.2f as repeat of previous', name, confidence)
             return False
 
