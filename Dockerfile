@@ -6,7 +6,6 @@ WORKDIR /app
 # Минимальные системные зависимости:
 # - ffmpeg: декодирование RTSP-потоков
 # - libsm6, libxext6: требования OpenCV
-# - wget: скачивание весов YOLO при сборке
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ffmpeg \
         libsm6 \
