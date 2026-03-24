@@ -99,7 +99,7 @@ async def snapshot(request, tag):
     if tag in state.framebuffer:
         frame = state.framebuffer[tag].copy()
         for s in state.config['streams']:
-            if s['label'] == tag and 'detect_in_polygon' in s:
+            if s['label'] == tag and s.get('detect_in_polygon'):
                 ctr = np.array(s['detect_in_polygon']).reshape((-1, 1, 2)).astype(np.int32)
                 cv2.drawContours(frame, [ctr], -1, (0, 255, 0), 3)
 
