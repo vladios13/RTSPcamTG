@@ -17,7 +17,8 @@ allowed = [
     'fire hydrant', 'train', 'bus', 'bowl', 'cup', 'frisbee', 'bench',
     'tvmonitor', 'sports ball', 'bottle', 'bird', 'truck', 'banana',
     'surfboard', 'refrigerator', 'sheep', 'traffic light', 'aeroplane',
-    'chair', 'diningtable', 'diningtable', 'suitcase',
+    'chair', 'diningtable', 'diningtable', 'suitcase', 'backpack',
+    'vase',
 ]
 
 with open(state.args.classes, 'r') as f:
