@@ -1,5 +1,5 @@
 import pprint
-import time
+from pathlib import Path
 
 import numpy as np
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -29,6 +29,7 @@ def template(tpl, **kwargs):
 app = Sanic('camTGrtsp')
 
 app.static('/static', './static')
+app.static('/alarm-files', './alarm')
 
 
 @app.route('/')
@@ -152,21 +153,65 @@ async def movement_page(request):
 
 @app.route('/api/movement')
 async def api_movement(request):
-    window = int(request.args.get('minutes', 30)) * 60
-    now = time.time()
     result = {}
     for cam, entries in state.frame_stats.items():
-        # Trim stored data to last 30 min
-        trimmed = [e for e in entries if now - e['time'] <= window]
-        state.frame_stats[cam] = trimmed
         # Downsample: max 300 points per camera
-        step = max(1, len(trimmed) // 300)
-        sampled = trimmed[::step]
+        step = max(1, len(entries) // 300)
+        sampled = entries[::step]
         result[cam] = [
             {'t': round(e['time'] * 1000), 'v': round(e['stat'] * 1000, 3)}
             for e in sampled
         ]
     return response.json(result)
+
+
+@app.route('/api/alarms')
+async def api_alarms(request):
+    cam_filter = request.args.get('cam', 'all')
+    try:
+        offset = max(0, int(request.args.get('offset', 0)))
+        limit = min(200, max(1, int(request.args.get('limit', 50))))
+    except ValueError:
+        return response.json({'error': 'invalid offset or limit'}, status=400)
+
+    alarm_dir = Path('alarm')
+    all_files = []
+    cams = []
+
+    if alarm_dir.exists():
+        cam_dirs = sorted([d for d in alarm_dir.iterdir() if d.is_dir()])
+        cams = [d.name for d in cam_dirs]
+
+        for cam_dir in cam_dirs:
+            if cam_filter != 'all' and cam_dir.name != cam_filter:
+                continue
+            date_dirs = sorted([d for d in cam_dir.iterdir() if d.is_dir()], reverse=True)
+            for date_dir in date_dirs:
+                for f in sorted(date_dir.iterdir(), reverse=True):
+                    if f.suffix.lower() != '.jpg':
+                        continue
+                    # Разбираем время из имени: 2026-03-23_22_45_08_807018.jpg
+                    parts = f.stem.split('_')
+                    time_str = f'{parts[1]}:{parts[2]}:{parts[3]}' if len(parts) >= 4 else ''
+                    all_files.append({
+                        'cam': cam_dir.name,
+                        'date': date_dir.name,
+                        'time': time_str,
+                        'url': f'/alarm-files/{cam_dir.name}/{date_dir.name}/{f.name}',
+                        '_sort': f.name,
+                    })
+
+    # Сортируем по имени файла (содержит полный timestamp) — новые первые
+    all_files.sort(key=lambda x: x['_sort'], reverse=True)
+    for item in all_files:
+        del item['_sort']
+
+    total = len(all_files)
+    return response.json({
+        'items': all_files[offset:offset + limit],
+        'has_more': (offset + limit) < total,
+        'cams': cams,
+    })
 
 
 def begin():

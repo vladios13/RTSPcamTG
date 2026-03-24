@@ -5,123 +5,128 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
         integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-  <title>camTGrtsp — Движение</title>
+  <title>camTGrtsp — События</title>
   <style>
     body { background: #f8f9fa; }
     .navbar-brand { font-weight: 700; letter-spacing: 1px; }
-    .chart-wrap { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); padding: 1.2rem; margin-bottom: 1.5rem; }
-    .window-btn.active { font-weight: 700; }
     #status { font-size: .8rem; color: #6c757d; }
+    .alarm-card { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); overflow: hidden; margin-bottom: 1rem; }
+    .alarm-card img { width: 100%; display: block; cursor: pointer; }
+    .alarm-card .info { padding: .4rem .65rem; font-size: .8rem; color: #495057; line-height: 1.4; }
+    .alarm-card .cam { font-weight: 600; }
+    #no-data-msg { display: none; color: #6c757d; padding: 3rem; text-align: center; }
+    #load-more { display: none; }
   </style>
 </head>
 <body>
 
 <nav class="navbar navbar-dark bg-dark mb-4">
   <a class="navbar-brand" href="/">📷 camTGrtsp</a>
-  <span class="text-muted small" id="status">загрузка...</span>
+  <a class="btn btn-sm btn-outline-light" href="/">← Главная</a>
 </nav>
 
 <div class="container-fluid px-4">
-  <div class="d-flex align-items-center mb-3">
-    <h5 class="mb-0 mr-3">Активность движения</h5>
-    <div class="btn-group btn-group-sm" role="group">
-      <button class="btn btn-outline-secondary window-btn active" data-minutes="30">30 мин</button>
-      <button class="btn btn-outline-secondary window-btn" data-minutes="60">1 час</button>
-      <button class="btn btn-outline-secondary window-btn" data-minutes="360">6 часов</button>
-    </div>
+  <div class="d-flex align-items-center flex-wrap mb-3">
+    <h5 class="mb-0 mr-3">События</h5>
+    <div class="btn-group btn-group-sm mr-3" id="cam-filter" role="group"></div>
+    <span id="status" class="ml-auto">загрузка...</span>
   </div>
 
-  <div class="chart-wrap">
-    <canvas id="movementChart" height="100"></canvas>
+  <div class="row" id="alarm-grid"></div>
+  <div id="no-data-msg">Алармов пока нет.</div>
+
+  <div class="text-center mb-5">
+    <button class="btn btn-outline-secondary" id="load-more">Загрузить ещё</button>
   </div>
 </div>
 
 <script>
-  const COLORS = [
-    '#007bff','#dc3545','#28a745','#fd7e14',
-    '#6f42c1','#20c997','#e83e8c','#17a2b8'
-  ];
+  const LIMIT = 50;
+  let currentCam = 'all';
+  let currentOffset = 0;
+  let allCams = [];
+  let isLoading = false;
 
-  let currentMinutes = 30;
-  let chart = null;
-
-  function buildDatasets(data) {
-    return Object.entries(data).map(([cam, points], i) => ({
-      label: cam,
-      data: points.map(p => ({ x: p.t, y: p.v })),
-      borderColor: COLORS[i % COLORS.length],
-      backgroundColor: COLORS[i % COLORS.length] + '22',
-      borderWidth: 1.5,
-      pointRadius: 0,
-      fill: true,
-      tension: 0.3,
-    }));
+  function formatDate(dateStr) {
+    const [y, m, d] = dateStr.split('-');
+    return d + '.' + m + '.' + y;
   }
 
-  function initChart(data) {
-    const ctx = document.getElementById('movementChart').getContext('2d');
-    chart = new Chart(ctx, {
-      type: 'line',
-      data: { datasets: buildDatasets(data) },
-      options: {
-        animation: false,
-        responsive: true,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: { position: 'top' },
-          tooltip: {
-            callbacks: {
-              label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(2)
-            }
-          }
-        },
-        scales: {
-          x: {
-            type: 'time',
-            time: { tooltipFormat: 'HH:mm:ss', displayFormats: { minute: 'HH:mm', second: 'HH:mm:ss' } },
-            title: { display: true, text: 'Время' },
-          },
-          y: {
-            title: { display: true, text: 'Активность' },
-            beginAtZero: true,
-          }
-        }
-      }
+  function renderCard(item) {
+    const col = document.createElement('div');
+    col.className = 'col-6 col-sm-4 col-md-3 col-lg-2';
+    col.innerHTML =
+      '<div class="alarm-card">' +
+        '<a href="' + item.url + '" target="_blank">' +
+          '<img src="' + item.url + '" loading="lazy" alt="' + item.cam + '">' +
+        '</a>' +
+        '<div class="info">' +
+          '<span class="cam">' + item.cam + '</span><br>' +
+          formatDate(item.date) + ' ' + item.time +
+        '</div>' +
+      '</div>';
+    return col;
+  }
+
+  function renderFilterButtons() {
+    const container = document.getElementById('cam-filter');
+    container.innerHTML = '';
+
+    [{ id: 'all', label: 'Все' }].concat(allCams.map(c => ({ id: c, label: c }))).forEach(function(entry) {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-outline-secondary' + (currentCam === entry.id ? ' active font-weight-bold' : '');
+      btn.textContent = entry.label;
+      btn.addEventListener('click', function() { switchCam(entry.id); });
+      container.appendChild(btn);
     });
   }
 
-  function updateChart(data) {
-    if (!chart) { initChart(data); return; }
-    const datasets = buildDatasets(data);
-    chart.data.datasets = datasets;
-    chart.update('none');
+  function switchCam(cam) {
+    currentCam = cam;
+    currentOffset = 0;
+    document.getElementById('alarm-grid').innerHTML = '';
+    renderFilterButtons();
+    load();
   }
 
   function load() {
-    fetch('/api/movement?minutes=' + currentMinutes)
-      .then(r => r.json())
-      .then(data => {
-        updateChart(data);
-        const total = Object.values(data).reduce((s, pts) => s + pts.length, 0);
-        const now = new Date().toLocaleTimeString('ru-RU');
-        document.getElementById('status').textContent = total + ' точек · обновлено ' + now;
+    if (isLoading) return;
+    isLoading = true;
+    document.getElementById('load-more').disabled = true;
+    const url = '/api/alarms?cam=' + currentCam + '&offset=' + currentOffset + '&limit=' + LIMIT;
+    fetch(url)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        // Кнопки камер строим один раз — при первом ответе
+        if (allCams.length === 0 && data.cams.length > 0) {
+          allCams = data.cams;
+          renderFilterButtons();
+        }
+
+        const grid = document.getElementById('alarm-grid');
+        data.items.forEach(function(item) { grid.appendChild(renderCard(item)); });
+
+        const shown = currentOffset + data.items.length;
+        document.getElementById('no-data-msg').style.display = shown === 0 ? 'block' : 'none';
+        document.getElementById('load-more').style.display = data.has_more ? 'block' : 'none';
+        document.getElementById('status').textContent =
+          'Показано ' + shown + (data.has_more ? '+' : '') + ' · ' + new Date().toLocaleTimeString('ru-RU');
+
+        currentOffset = shown;
+        isLoading = false;
+        document.getElementById('load-more').disabled = false;
       })
-      .catch(() => { document.getElementById('status').textContent = 'ошибка загрузки'; });
+      .catch(function(err) {
+        console.error('api/alarms error:', err);
+        document.getElementById('status').textContent = 'ошибка загрузки';
+        isLoading = false;
+        document.getElementById('load-more').disabled = false;
+      });
   }
 
-  document.querySelectorAll('.window-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-      document.querySelectorAll('.window-btn').forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-      currentMinutes = parseInt(this.dataset.minutes);
-      load();
-    });
-  });
+  document.getElementById('load-more').addEventListener('click', load);
 
   load();
-  setInterval(load, 10000);
 </script>
 </body>
 </html>
