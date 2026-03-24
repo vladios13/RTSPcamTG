@@ -49,6 +49,26 @@
   <div class="config-card">
     <h6 class="text-muted text-uppercase mb-3" style="font-size:.75rem; letter-spacing:1px;">RTSP Streams</h6>
     <ul class="list-group" id="streams"></ul>
+
+    <hr class="mt-3 mb-3">
+    <div id="add-stream-form">
+      <div class="form-row align-items-end">
+        <div class="col-4">
+          <label class="small text-muted mb-1" for="new-label">Label</label>
+          <input type="text" class="form-control form-control-sm" id="new-label"
+                 placeholder="koridor" autocomplete="off">
+        </div>
+        <div class="col">
+          <label class="small text-muted mb-1" for="new-url">RTSP URL</label>
+          <input type="text" class="form-control form-control-sm" id="new-url"
+                 placeholder="rtsp://admin:password@192.168.1.1:554/..." autocomplete="off">
+        </div>
+        <div class="col-auto">
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-stream">+ Добавить</button>
+        </div>
+      </div>
+      <div class="text-danger small mt-1 d-none" id="add-stream-error"></div>
+    </div>
   </div>
 
   <button type="button" class="btn btn-primary btn-block" id="btn_Save">Сохранить</button>
@@ -83,11 +103,42 @@
   </div>
 </div>
 
+<!-- Edit camera modal -->
+<div class="modal fade" id="editCamModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Редактировать камеру</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-original-label">
+        <div class="form-group">
+          <label for="edit-label">Label</label>
+          <input type="text" class="form-control" id="edit-label" autocomplete="off">
+        </div>
+        <div class="form-group mb-0">
+          <label for="edit-url">RTSP URL</label>
+          <input type="text" class="form-control" id="edit-url" autocomplete="off">
+        </div>
+        <div class="text-danger small mt-2 d-none" id="edit-cam-error"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-primary" id="btn-save-edit">Сохранить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 $(document).ready(function () {
 
   // ── Load config ──────────────────────────────────────────────
+  var savedConfig = {};
+
   $.getJSON('/config.json', function (data) {
+    savedConfig = data;
     $('#tg_token').val(data.tg_token);
     $('#tg_chat').val(data.tg_chat);
     $.each(data.streams, function (key, item) {
@@ -100,7 +151,7 @@ $(document).ready(function () {
     var row = $('<li class="list-group-item stream-item"></li>')
       .attr('data-label', label)
       .attr('data-url', url)
-      .attr('data-polygon', polygon ? JSON.stringify(polygon) : '');
+      .attr('data-polygon', polygon && polygon.length ? JSON.stringify(polygon) : '');
 
     var badge = polygon && polygon.length === 4
       ? ' <span class="badge badge-success ml-1">Зона</span>'
@@ -115,12 +166,14 @@ $(document).ready(function () {
         .attr('data-label', label)
     );
     actions.append(
-      $('<a href="#" class="delete text-danger small">Удалить</a>')
+      $('<button class="btn btn-sm btn-outline-secondary edit-btn">Изм.</button>')
+    );
+    actions.append(
+      $('<button class="btn btn-sm btn-outline-danger delete-btn">Удалить</button>')
     );
     row.append(actions);
 
-    row.find('.delete').click(function (e) {
-      e.preventDefault();
+    row.find('.delete-btn').click(function () {
       $(this).closest('li').remove();
     });
 
@@ -129,21 +182,90 @@ $(document).ready(function () {
       openPolygonEditor($(this).attr('data-label'));
     });
 
+    row.find('.edit-btn').click(function () {
+      var li = $(this).closest('li');
+      $('#edit-original-label').val(li.attr('data-label'));
+      $('#edit-label').val(li.attr('data-label'));
+      $('#edit-url').val(li.attr('data-url'));
+      $('#edit-cam-error').addClass('d-none');
+      $('#editCamModal').modal('show');
+    });
+
     $('#streams').append(row);
   }
+
+  // ── Add stream ───────────────────────────────────────────────
+  $('#btn-add-stream').click(function () {
+    var label = $.trim($('#new-label').val());
+    var url   = $.trim($('#new-url').val());
+    var $err  = $('#add-stream-error');
+
+    if (!label || !/^[a-zA-Z0-9_-]+$/.test(label)) {
+      $err.text('Label: только латиница, цифры, _ и -').removeClass('d-none'); return;
+    }
+    if ($('#streams li[data-label="' + label + '"]').length) {
+      $err.text('Камера с таким label уже существует').removeClass('d-none'); return;
+    }
+    if (!url || !url.startsWith('rtsp://')) {
+      $err.text('URL должен начинаться с rtsp://').removeClass('d-none'); return;
+    }
+    $err.addClass('d-none');
+
+    addStreamRow(label, url, null);
+    $('#new-label').val('');
+    $('#new-url').val('');
+  });
+
+  // ── Edit stream ──────────────────────────────────────────────
+  $('#btn-save-edit').click(function () {
+    var origLabel = $('#edit-original-label').val();
+    var newLabel  = $.trim($('#edit-label').val());
+    var newUrl    = $.trim($('#edit-url').val());
+    var $err      = $('#edit-cam-error');
+
+    if (!newLabel || !/^[a-zA-Z0-9_-]+$/.test(newLabel)) {
+      $err.text('Label: только латиница, цифры, _ и -').removeClass('d-none'); return;
+    }
+    if (newLabel !== origLabel && $('#streams li[data-label="' + newLabel + '"]').length) {
+      $err.text('Камера с таким label уже существует').removeClass('d-none'); return;
+    }
+    if (!newUrl || !newUrl.startsWith('rtsp://')) {
+      $err.text('URL должен начинаться с rtsp://').removeClass('d-none'); return;
+    }
+    $err.addClass('d-none');
+
+    // Закрыть polygon-редактор если он открыт для этой камеры
+    if (activeLabel === origLabel) {
+      $('#polygonModal').modal('hide');
+    }
+
+    var row = $('#streams li[data-label="' + origLabel + '"]');
+    row.attr('data-label', newLabel);
+    row.attr('data-url', newUrl);
+    row.find('.zone-btn').attr('data-label', newLabel);
+
+    var badgeHtml = row.find('.badge').prop('outerHTML');
+    row.find('.stream-label').html(
+      '<strong>' + newLabel + '</strong>' + badgeHtml +
+      '<br><small class="text-muted">' + newUrl + '</small>'
+    );
+
+    $('#editCamModal').modal('hide');
+  });
 
   // ── Global save ──────────────────────────────────────────────
   $('#btn_Save').click(function (e) {
     e.preventDefault();
-    var config = {
+    var config = $.extend({}, savedConfig, {
       tg_token: $('#tg_token').val(),
-      tg_chat: $('#tg_chat').val(),
+      tg_chat: parseInt($('#tg_chat').val(), 10) || savedConfig.tg_chat || 0,
       streams: [],
-    };
+    });
     $('#streams li').each(function () {
       var streamObj = {
         label: $(this).attr('data-label'),
         url: $(this).attr('data-url'),
+        detect_in_polygon: [],
         ignore: [],
       };
       var raw = $(this).attr('data-polygon');

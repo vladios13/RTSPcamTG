@@ -77,8 +77,6 @@ async def configSave(request):
     timer = Timer(5, stream.loadStreams)
     timer.start()
 
-    state.framebuffer = {}
-
     notifier.stop()
     notifier.initBot()
     notifier.begin()

@@ -89,6 +89,7 @@ def processStream(name, url):
 def loadStreams():
     global _stream_threads
     state.stopStreams = False
+    state.framebuffer = {}
     _stream_threads = []
     startup_delay = state.config.get('stream_startup_delay_s', 2)
     streams = state.config['streams']
