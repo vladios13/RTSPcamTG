@@ -36,17 +36,33 @@ def str2bool(v):
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
+def _get_cuda_device_count():
+    """Возвращает количество доступных CUDA-устройств, 0 если CUDA недоступна.
+    
+    """
+    if not hasattr(cv2, 'cuda'):
+        return 0
+    try:
+        count = cv2.cuda.getCudaEnabledDeviceCount()
+        return count if count > 0 else 0
+    except cv2.error as e:
+        state.logger.debug('CUDA probe failed: %s', e)
+        return 0
+
+
 def init_model():
     """Загружает YOLO-модель один раз при старте. Вызывается из main.py."""
     global net
     state.logger.info('Loading YOLO model: %s + %s', state.args.weights, state.args.config)
     net = cv2.dnn.readNet(state.args.weights, state.args.config)
     state.logger.info('YOLO model loaded successfully')
-    try:
+
+    cuda_devices = _get_cuda_device_count()
+    if cuda_devices > 0:
         net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
         net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
-        state.logger.info('YOLO: CUDA backend enabled')
-    except Exception:
+        state.logger.info('YOLO: CUDA backend enabled (%d device(s))', cuda_devices)
+    else:
         net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
         net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
         state.logger.info('YOLO: CPU backend (CUDA unavailable)')
