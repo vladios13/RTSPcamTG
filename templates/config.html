@@ -20,7 +20,6 @@
       --font:        'Outfit', sans-serif;
     }
 
-    *, *::before, *::after { box-sizing: border-box; }
     body { background: var(--bg); font-family: var(--font); }
 
     /* ── Navbar ─────────────────────────────────────────── */
@@ -194,11 +193,11 @@
 </div><!-- /page-wrap -->
 
 <!-- ── Polygon editor modal ───────────────────────────── -->
-<div class="modal fade" id="polygonModal" tabindex="-1">
+<div class="modal fade" id="polygonModal" tabindex="-1" aria-labelledby="polygonModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Зона детекции: <span id="modal-cam-name"></span></h5>
+        <h5 class="modal-title" id="polygonModalLabel">Зона детекции: <span id="modal-cam-name"></span></h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
       </div>
       <div class="modal-body">
@@ -222,11 +221,11 @@
 </div>
 
 <!-- ── Edit camera modal ──────────────────────────────── -->
-<div class="modal fade" id="editCamModal" tabindex="-1">
+<div class="modal fade" id="editCamModal" tabindex="-1" aria-labelledby="editCamModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Редактировать камеру</h5>
+        <h5 class="modal-title" id="editCamModalLabel">Редактировать камеру</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
       </div>
       <div class="modal-body">
@@ -441,8 +440,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Canvas setup runs after modal animation completes (clientWidth is correct)
   document.getElementById('polygonModal').addEventListener('shown.bs.modal', function() {
-    var canvas = document.getElementById('polygon-canvas');
-    var wrap   = document.getElementById('canvas-wrap');
+    var wrap = document.getElementById('canvas-wrap');
 
     function renderCanvas() {
       var maxW  = wrap.clientWidth;
@@ -468,8 +466,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   function redraw() {
-    var canvas = document.getElementById('polygon-canvas');
-    var ctx    = canvas.getContext('2d');
+    var ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(canvasImg, 0, 0, canvas.width, canvas.height);
 
@@ -524,7 +521,7 @@ document.addEventListener('DOMContentLoaded', function() {
   var pointsSnap   = null;
 
   function getCanvasPos(e) {
-    var rect = document.getElementById('polygon-canvas').getBoundingClientRect();
+    var rect = canvas.getBoundingClientRect();
     return { cx: e.clientX - rect.left, cy: e.clientY - rect.top };
   }
 
@@ -539,8 +536,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function isInsidePolygon(pos) {
     if (points.length < 4) return false;
-    var canvas = document.getElementById('polygon-canvas');
-    var ctx    = canvas.getContext('2d');
+    var ctx = canvas.getContext('2d');
     ctx.beginPath();
     ctx.moveTo(points[0].cx, points[0].cy);
     for (var i = 1; i < points.length; i++) ctx.lineTo(points[i].cx, points[i].cy);
@@ -608,9 +604,8 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   document.getElementById('btn-save-zone').addEventListener('click', function() {
-    var cvs    = document.getElementById('polygon-canvas');
-    var scaleX = frameW / cvs.width;
-    var scaleY = frameH / cvs.height;
+    var scaleX = frameW / canvas.width;
+    var scaleY = frameH / canvas.height;
     var framePoints = points.map(function(p) {
       return [Math.round(p.cx * scaleX), Math.round(p.cy * scaleY)];
     });
@@ -630,9 +625,8 @@ document.addEventListener('DOMContentLoaded', function() {
     activeLabel   = null;
     dragPointIdx  = -1;
     dragAll       = false;
-    var cvs = document.getElementById('polygon-canvas');
-    cvs.getContext('2d').clearRect(0, 0, cvs.width, cvs.height);
-    cvs.style.cursor = 'crosshair';
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    canvas.style.cursor = 'crosshair';
     updateUI();
   });
 
