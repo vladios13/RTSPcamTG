@@ -157,13 +157,18 @@ def detect(stream):
 
     name = stream['label']
     name2 = name + '_processed'
-    image = state.framebuffer[name]
+
+    frame = state.framebuffer.get(name)
+    if frame is None:
+        return None
+    image = frame.copy()
 
     if state.stopDetection:
         return None
 
-    if name2 in state.framebuffer:
-        commutative_image_diff = get_image_difference(state.framebuffer[name], state.framebuffer[name2])
+    prev_frame = state.framebuffer.get(name2)
+    if prev_frame is not None:
+        commutative_image_diff = get_image_difference(frame, prev_frame)
         state.increase_counter('total_diff', commutative_image_diff)
         state.increase_counter('total_processed')
         state.add_framestat(name, commutative_image_diff)
@@ -214,7 +219,7 @@ def detect(stream):
     if stream.get('detect_in_polygon'):
         polygon = Polygon(stream['detect_in_polygon'])
 
-    orgImage = image.copy()
+    orgImage = frame
     for i in indices:
         idx = i[0] if hasattr(i, '__len__') else i
         box = boxes[idx]
@@ -229,7 +234,7 @@ def detect(stream):
         point = Point(*point_loc)
 
         alarm_object_name = str(classes[class_ids[idx]])
-        if alarm_object_name not in ignored_classes and checkAlarm(alarm_object_name, point_loc, confidences[idx]):
+        if alarm_object_name not in ignored_classes and checkAlarm(name, alarm_object_name, point_loc, confidences[idx]):
             in_zone = polygon is None or polygon.contains(point)
             if in_zone:
                 # Объект внутри зоны — алерт
@@ -251,14 +256,14 @@ def detect(stream):
     return image
 
 
-def checkAlarm(name, point, confidence):
+def checkAlarm(cam, name, point, confidence):
     """
     Антиспам алертов.
 
     Подавляет повторные уведомления об одном и том же объекте
     в одном месте в течение "WINDOW" секунд.
-
     Считается повтором если:
+      - совпадает камера (cam)
       - совпадает класс объекта (name)
       - объект находится в радиусе 30px от предыдущего (Manhattan distance)
 
@@ -271,13 +276,14 @@ def checkAlarm(name, point, confidence):
     notified = [a for a in notified if now - a['time'] < WINDOW]
 
     for alarm in notified:
-        if (alarm['name'] == name
+        if (alarm['cam'] == cam
+                and alarm['name'] == name
                 and abs(alarm['point'][0] - point[0]) + abs(alarm['point'][1] - point[1]) < 30):
-            state.logger.debug('Antispam: suppressed %s conf=%.2f at (%d,%d), repeat within %ds window',
-                               name, confidence, point[0], point[1], WINDOW)
+            state.logger.debug('Antispam: suppressed %s cam=%s conf=%.2f at (%d,%d), repeat within %ds window',
+                               name, cam, confidence, point[0], point[1], WINDOW)
             return False
 
-    notified.append({'name': name, 'point': point, 'confidence': confidence, 'time': now})
+    notified.append({'cam': cam, 'name': name, 'point': point, 'confidence': confidence, 'time': now})
     return True
 
 
