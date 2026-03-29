@@ -2,66 +2,180 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
-        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-  <script src="https://code.jquery.com/jquery-3.4.1.min.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
-          integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
-  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
-          integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <title>camTGrtsp — Config</title>
   <style>
-    body { background: #f8f9fa; }
-    .navbar-brand { font-weight: 700; letter-spacing: 1px; }
-    .config-card { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); padding: 1.5rem; margin-bottom: 1.5rem; }
-    .stream-item { display: flex; justify-content: space-between; align-items: center; gap: .75rem; }
-    .stream-item .stream-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-    .stream-item .stream-actions { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
+    :root {
+      --accent:      #4361ee;
+      --accent-h:    #3451d1;
+      --bg:          #f4f6fb;
+      --card-bg:     #ffffff;
+      --card-shadow: 0 1px 8px rgba(0,0,0,.06);
+      --card-radius: 12px;
+      --nav-h:       54px;
+      --border:      #e8ecf4;
+      --font:        'Outfit', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { background: var(--bg); font-family: var(--font); }
+
+    /* ── Navbar ─────────────────────────────────────────── */
+    .app-nav {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      height: var(--nav-h);
+      display: flex;
+      align-items: center;
+      padding: 0 1.25rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .app-brand {
+      font-weight: 700;
+      font-size: .95rem;
+      color: var(--accent);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+    }
+    .app-brand:hover { color: var(--accent-h); }
+
+    /* ── Page wrap ──────────────────────────────────────── */
+    .page-wrap {
+      padding: 1.5rem 1rem;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    /* ── Config card ────────────────────────────────────── */
+    .config-card {
+      background: var(--card-bg);
+      border-radius: var(--card-radius);
+      box-shadow: var(--card-shadow);
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .section-label {
+      font-size: .68rem;
+      font-weight: 700;
+      color: #9ca3af;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: .85rem;
+    }
+
+    /* ── Form fields ────────────────────────────────────── */
+    .form-label { font-size: .85rem; font-weight: 500; color: #374151; margin-bottom: .3rem; }
+    .form-control {
+      font-family: var(--font);
+      font-size: .875rem;
+      border-color: var(--border);
+      border-radius: 8px;
+    }
+    .form-control:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(67,97,238,.12);
+    }
+
+    /* ── Stream list ────────────────────────────────────── */
+    .stream-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: .75rem;
+      padding: .6rem .75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: .5rem;
+      background: #fff;
+    }
+    .stream-label { min-width: 0; overflow: hidden; flex: 1; }
+    .stream-label strong { font-size: .875rem; color: #1a1d2e; }
+    .stream-label small  { color: #9ca3af; font-size: .75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+    .stream-actions { display: flex; align-items: center; gap: .35rem; flex-shrink: 0; }
+    .stream-actions .btn { font-size: .75rem; padding: .2rem .55rem; border-radius: 6px; }
+
+    /* ── Save notice ────────────────────────────────────── */
+    #save-ok {
+      font-size: .8rem;
+      color: #22c55e;
+      font-weight: 600;
+      opacity: 0;
+      transition: opacity .3s;
+    }
+    #save-ok.visible { opacity: 1; }
+
+    /* ── Polygon canvas ─────────────────────────────────── */
     #polygon-canvas { cursor: crosshair; display: block; max-width: 100%; }
-    #canvas-wrap { position: relative; background: #000; line-height: 0; width: 100%; }
-    .point-hint { font-size: .8rem; color: #6c757d; }
+    #canvas-wrap    { position: relative; background: #000; line-height: 0; width: 100%; border-radius: 8px; overflow: hidden; }
+    .point-hint     { font-size: .8rem; color: #6b7280; }
+
+    /* ── Modal tweaks ───────────────────────────────────── */
+    .modal-content {
+      border: none;
+      border-radius: var(--card-radius);
+      box-shadow: 0 8px 40px rgba(0,0,0,.15);
+      font-family: var(--font);
+    }
+    .modal-header { border-bottom: 1px solid var(--border); padding: 1rem 1.25rem; }
+    .modal-footer { border-top: 1px solid var(--border); padding: .75rem 1.25rem; }
+    .modal-title  { font-size: .95rem; font-weight: 700; color: #1a1d2e; }
   </style>
 </head>
 <body>
 
-<nav class="navbar navbar-dark bg-dark mb-4">
-  <a class="navbar-brand" href="/">📷 camTGrtsp</a>
-  <span class="text-success small d-none" id="save-ok">Сохранено</span>
+<nav class="app-nav">
+  <a class="app-brand" href="/">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M23 7l-7 5 7 5V7z"/>
+      <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+    </svg>
+    camTGrtsp
+  </a>
+  <div class="ms-auto">
+    <span id="save-ok">Сохранено</span>
+  </div>
 </nav>
 
-<div class="container" style="max-width: 700px;">
+<div class="page-wrap">
 
   <!-- Telegram -->
   <div class="config-card">
-    <h6 class="text-muted text-uppercase mb-3" style="font-size:.75rem; letter-spacing:1px;">Telegram</h6>
-    <div class="form-group">
-      <label for="tg_token">Bot API Token</label>
-      <input type="text" class="form-control" id="tg_token" placeholder="123456:ABC-DEF...">
+    <div class="section-label">Telegram</div>
+    <div class="mb-3">
+      <label class="form-label" for="tg_token">Bot API Token</label>
+      <input type="text" class="form-control" id="tg_token" placeholder="123456:ABC-DEF…">
     </div>
-    <div class="form-group mb-0">
-      <label for="tg_chat">Chat ID</label>
+    <div class="mb-0">
+      <label class="form-label" for="tg_chat">Chat ID</label>
       <input type="text" class="form-control" id="tg_chat" placeholder="-100123456789">
     </div>
   </div>
 
-  <!-- Streams -->
+  <!-- RTSP Streams -->
   <div class="config-card">
-    <h6 class="text-muted text-uppercase mb-3" style="font-size:.75rem; letter-spacing:1px;">RTSP Streams</h6>
-    <ul class="list-group" id="streams"></ul>
+    <div class="section-label">RTSP Streams</div>
+    <div id="streams"></div>
 
-    <hr class="mt-3 mb-3">
+    <hr style="border-color: var(--border); margin: .85rem 0;">
+
     <div id="add-stream-form">
-      <div class="form-row align-items-end">
+      <div class="row g-2 align-items-end">
         <div class="col-4">
-          <label class="small text-muted mb-1" for="new-label">Label</label>
+          <label class="form-label mb-1" for="new-label" style="font-size:.78rem;">Label</label>
           <input type="text" class="form-control form-control-sm" id="new-label"
                  placeholder="koridor" autocomplete="off">
         </div>
         <div class="col">
-          <label class="small text-muted mb-1" for="new-url">RTSP URL</label>
+          <label class="form-label mb-1" for="new-url" style="font-size:.78rem;">RTSP URL</label>
           <input type="text" class="form-control form-control-sm" id="new-url"
-                 placeholder="rtsp://admin:password@192.168.1.1:554/..." autocomplete="off">
+                 placeholder="rtsp://admin:pass@192.168.1.1:554/…" autocomplete="off">
         </div>
         <div class="col-auto">
           <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-stream">+ Добавить</button>
@@ -71,17 +185,21 @@
     </div>
   </div>
 
-  <button type="button" class="btn btn-primary btn-block" id="btn_Save">Сохранить</button>
+  <div class="d-grid">
+    <button type="button" class="btn btn-primary" id="btn_Save" style="font-family: var(--font); font-weight: 600;">
+      Сохранить
+    </button>
+  </div>
 
-</div>
+</div><!-- /page-wrap -->
 
-<!-- Polygon editor modal -->
-<div class="modal fade" id="polygonModal" tabindex="-1" role="dialog">
-  <div class="modal-dialog modal-lg" role="document">
+<!-- ── Polygon editor modal ───────────────────────────── -->
+<div class="modal fade" id="polygonModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">Зона детекции: <span id="modal-cam-name"></span></h5>
-        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
       </div>
       <div class="modal-body">
         <p class="point-hint mb-2">
@@ -96,234 +214,238 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
-        <button type="button" class="btn btn-primary" id="btn-save-zone" disabled>Сохранить зону</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-sm btn-primary" id="btn-save-zone" disabled>Сохранить зону</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Edit camera modal -->
-<div class="modal fade" id="editCamModal" tabindex="-1" role="dialog">
-  <div class="modal-dialog" role="document">
+<!-- ── Edit camera modal ──────────────────────────────── -->
+<div class="modal fade" id="editCamModal" tabindex="-1">
+  <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">Редактировать камеру</h5>
-        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="edit-original-label">
-        <div class="form-group">
-          <label for="edit-label">Label</label>
+        <div class="mb-3">
+          <label class="form-label" for="edit-label">Label</label>
           <input type="text" class="form-control" id="edit-label" autocomplete="off">
         </div>
-        <div class="form-group mb-0">
-          <label for="edit-url">RTSP URL</label>
+        <div class="mb-0">
+          <label class="form-label" for="edit-url">RTSP URL</label>
           <input type="text" class="form-control" id="edit-url" autocomplete="off">
         </div>
         <div class="text-danger small mt-2 d-none" id="edit-cam-error"></div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
-        <button type="button" class="btn btn-primary" id="btn-save-edit">Сохранить</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-sm btn-primary" id="btn-save-edit">Сохранить</button>
       </div>
     </div>
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-$(document).ready(function () {
+document.addEventListener('DOMContentLoaded', function() {
 
-  // ── Load config ──────────────────────────────────────────────
+  // ── Modal instances ─────────────────────────────────────
+  var polygonModal = new bootstrap.Modal(document.getElementById('polygonModal'));
+  var editCamModal = new bootstrap.Modal(document.getElementById('editCamModal'));
+
+  // ── Load config ─────────────────────────────────────────
   var savedConfig = {};
 
-  $.getJSON('/config.json', function (data) {
-    savedConfig = data;
-    $('#tg_token').val(data.tg_token);
-    $('#tg_chat').val(data.tg_chat);
-    $.each(data.streams, function (key, item) {
-      addStreamRow(item.label, item.url, item.detect_in_polygon || null);
+  fetch('/config.json')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      savedConfig = data;
+      document.getElementById('tg_token').value = data.tg_token || '';
+      document.getElementById('tg_chat').value  = data.tg_chat  || '';
+      (data.streams || []).forEach(function(item) {
+        addStreamRow(item.label, item.url, item.detect_in_polygon || null);
+      });
     });
-  });
 
-  // ── Stream row ───────────────────────────────────────────────
+  // ── Add stream row ──────────────────────────────────────
   function addStreamRow(label, url, polygon) {
-    var row = $('<li class="list-group-item stream-item"></li>')
-      .attr('data-label', label)
-      .attr('data-url', url)
-      .attr('data-polygon', polygon && polygon.length ? JSON.stringify(polygon) : '');
+    var badge = (polygon && polygon.length === 4)
+      ? '<span class="badge text-bg-success ms-1">Зона</span>'
+      : '<span class="badge text-bg-secondary ms-1 badge-zone-empty">Нет зоны</span>';
 
-    var badge = polygon && polygon.length === 4
-      ? ' <span class="badge badge-success ml-1">Зона</span>'
-      : ' <span class="badge badge-secondary ml-1 badge-zone-empty">Нет зоны</span>';
+    var div = document.createElement('div');
+    div.className = 'stream-item';
+    div.dataset.label   = label;
+    div.dataset.url     = url;
+    div.dataset.polygon = (polygon && polygon.length) ? JSON.stringify(polygon) : '';
+    div.innerHTML =
+      '<span class="stream-label">' +
+        '<strong>' + label + '</strong>' + badge +
+        '<small>' + url + '</small>' +
+      '</span>' +
+      '<span class="stream-actions">' +
+        '<button class="btn btn-outline-secondary zone-btn" data-label="' + label + '">Зона</button>' +
+        '<button class="btn btn-outline-secondary edit-btn">Изм.</button>' +
+        '<button class="btn btn-outline-danger delete-btn">Удалить</button>' +
+      '</span>';
 
-    row.append('<span class="stream-label"><strong>' + label + '</strong>' + badge +
-               '<br><small class="text-muted">' + url + '</small></span>');
-
-    var actions = $('<span class="stream-actions"></span>');
-    actions.append(
-      $('<button class="btn btn-sm btn-outline-secondary zone-btn">Зона</button>')
-        .attr('data-label', label)
-    );
-    actions.append(
-      $('<button class="btn btn-sm btn-outline-secondary edit-btn">Изм.</button>')
-    );
-    actions.append(
-      $('<button class="btn btn-sm btn-outline-danger delete-btn">Удалить</button>')
-    );
-    row.append(actions);
-
-    row.find('.delete-btn').click(function () {
-      $(this).closest('li').remove();
-    });
-
-    row.find('.zone-btn').click(function (e) {
-      e.preventDefault();
-      openPolygonEditor($(this).attr('data-label'));
-    });
-
-    row.find('.edit-btn').click(function () {
-      var li = $(this).closest('li');
-      $('#edit-original-label').val(li.attr('data-label'));
-      $('#edit-label').val(li.attr('data-label'));
-      $('#edit-url').val(li.attr('data-url'));
-      $('#edit-cam-error').addClass('d-none');
-      $('#editCamModal').modal('show');
-    });
-
-    $('#streams').append(row);
+    document.getElementById('streams').appendChild(div);
   }
 
-  // ── Add stream ───────────────────────────────────────────────
-  $('#btn-add-stream').click(function () {
-    var label = $.trim($('#new-label').val());
-    var url   = $.trim($('#new-url').val());
-    var $err  = $('#add-stream-error');
+  // ── Event delegation on stream list ────────────────────
+  document.getElementById('streams').addEventListener('click', function(e) {
+    var delBtn  = e.target.closest('.delete-btn');
+    var zoneBtn = e.target.closest('.zone-btn');
+    var editBtn = e.target.closest('.edit-btn');
+
+    if (delBtn) {
+      delBtn.closest('.stream-item').remove();
+
+    } else if (zoneBtn) {
+      e.preventDefault();
+      openPolygonEditor(zoneBtn.dataset.label);
+
+    } else if (editBtn) {
+      var item = editBtn.closest('.stream-item');
+      document.getElementById('edit-original-label').value = item.dataset.label;
+      document.getElementById('edit-label').value          = item.dataset.label;
+      document.getElementById('edit-url').value            = item.dataset.url;
+      document.getElementById('edit-cam-error').classList.add('d-none');
+      editCamModal.show();
+    }
+  });
+
+  // ── Add stream ──────────────────────────────────────────
+  document.getElementById('btn-add-stream').addEventListener('click', function() {
+    var label  = document.getElementById('new-label').value.trim();
+    var url    = document.getElementById('new-url').value.trim();
+    var errEl  = document.getElementById('add-stream-error');
 
     if (!label || !/^[a-zA-Z0-9_-]+$/.test(label)) {
-      $err.text('Label: только латиница, цифры, _ и -').removeClass('d-none'); return;
+      errEl.textContent = 'Label: только латиница, цифры, _ и -';
+      errEl.classList.remove('d-none'); return;
     }
-    if ($('#streams li[data-label="' + label + '"]').length) {
-      $err.text('Камера с таким label уже существует').removeClass('d-none'); return;
+    if (document.querySelector('.stream-item[data-label="' + label + '"]')) {
+      errEl.textContent = 'Камера с таким label уже существует';
+      errEl.classList.remove('d-none'); return;
     }
     if (!url || !url.startsWith('rtsp://')) {
-      $err.text('URL должен начинаться с rtsp://').removeClass('d-none'); return;
+      errEl.textContent = 'URL должен начинаться с rtsp://';
+      errEl.classList.remove('d-none'); return;
     }
-    $err.addClass('d-none');
+    errEl.classList.add('d-none');
 
     addStreamRow(label, url, null);
-    $('#new-label').val('');
-    $('#new-url').val('');
+    document.getElementById('new-label').value = '';
+    document.getElementById('new-url').value   = '';
   });
 
-  // ── Edit stream ──────────────────────────────────────────────
-  $('#btn-save-edit').click(function () {
-    var origLabel = $('#edit-original-label').val();
-    var newLabel  = $.trim($('#edit-label').val());
-    var newUrl    = $.trim($('#edit-url').val());
-    var $err      = $('#edit-cam-error');
+  // ── Edit stream ─────────────────────────────────────────
+  document.getElementById('btn-save-edit').addEventListener('click', function() {
+    var origLabel = document.getElementById('edit-original-label').value;
+    var newLabel  = document.getElementById('edit-label').value.trim();
+    var newUrl    = document.getElementById('edit-url').value.trim();
+    var errEl     = document.getElementById('edit-cam-error');
 
     if (!newLabel || !/^[a-zA-Z0-9_-]+$/.test(newLabel)) {
-      $err.text('Label: только латиница, цифры, _ и -').removeClass('d-none'); return;
+      errEl.textContent = 'Label: только латиница, цифры, _ и -';
+      errEl.classList.remove('d-none'); return;
     }
-    if (newLabel !== origLabel && $('#streams li[data-label="' + newLabel + '"]').length) {
-      $err.text('Камера с таким label уже существует').removeClass('d-none'); return;
+    if (newLabel !== origLabel && document.querySelector('.stream-item[data-label="' + newLabel + '"]')) {
+      errEl.textContent = 'Камера с таким label уже существует';
+      errEl.classList.remove('d-none'); return;
     }
     if (!newUrl || !newUrl.startsWith('rtsp://')) {
-      $err.text('URL должен начинаться с rtsp://').removeClass('d-none'); return;
+      errEl.textContent = 'URL должен начинаться с rtsp://';
+      errEl.classList.remove('d-none'); return;
     }
-    $err.addClass('d-none');
+    errEl.classList.add('d-none');
 
-    // Закрыть polygon-редактор если он открыт для этой камеры
-    if (activeLabel === origLabel) {
-      $('#polygonModal').modal('hide');
-    }
+    if (activeLabel === origLabel) polygonModal.hide();
 
-    var row = $('#streams li[data-label="' + origLabel + '"]');
-    row.attr('data-label', newLabel);
-    row.attr('data-url', newUrl);
-    row.find('.zone-btn').attr('data-label', newLabel);
+    var row = document.querySelector('.stream-item[data-label="' + origLabel + '"]');
+    row.dataset.label = newLabel;
+    row.dataset.url   = newUrl;
+    row.querySelector('.zone-btn').dataset.label = newLabel;
 
-    var badgeHtml = row.find('.badge').prop('outerHTML');
-    row.find('.stream-label').html(
-      '<strong>' + newLabel + '</strong>' + badgeHtml +
-      '<br><small class="text-muted">' + newUrl + '</small>'
-    );
+    var badgeHTML = row.querySelector('.badge').outerHTML;
+    row.querySelector('.stream-label').innerHTML =
+      '<strong>' + newLabel + '</strong>' + badgeHTML +
+      '<small>' + newUrl + '</small>';
 
-    $('#editCamModal').modal('hide');
+    editCamModal.hide();
   });
 
-  // ── Global save ──────────────────────────────────────────────
-  $('#btn_Save').click(function (e) {
+  // ── Global save ─────────────────────────────────────────
+  document.getElementById('btn_Save').addEventListener('click', function(e) {
     e.preventDefault();
-    var config = $.extend({}, savedConfig, {
-      tg_token: $('#tg_token').val(),
-      tg_chat: parseInt($('#tg_chat').val(), 10) || savedConfig.tg_chat || 0,
-      streams: [],
+    var config = Object.assign({}, savedConfig, {
+      tg_token: document.getElementById('tg_token').value,
+      tg_chat:  parseInt(document.getElementById('tg_chat').value, 10) || savedConfig.tg_chat || 0,
+      streams:  []
     });
-    $('#streams li').each(function () {
+
+    document.querySelectorAll('.stream-item').forEach(function(item) {
       var streamObj = {
-        label: $(this).attr('data-label'),
-        url: $(this).attr('data-url'),
+        label: item.dataset.label,
+        url:   item.dataset.url,
         detect_in_polygon: [],
-        ignore: [],
+        ignore: []
       };
-      var raw = $(this).attr('data-polygon');
-      if (raw) {
-        try { streamObj.detect_in_polygon = JSON.parse(raw); } catch (e) {}
+      if (item.dataset.polygon) {
+        try { streamObj.detect_in_polygon = JSON.parse(item.dataset.polygon); } catch(e) {}
       }
       config.streams.push(streamObj);
     });
 
-    $.ajax({
-      contentType: 'application/json',
-      data: JSON.stringify(config),
-      dataType: 'json',
-      processData: false,
-      type: 'POST',
-      url: '/config.save',
-      success: function () {
-        $('#save-ok').fadeIn().delay(2000).fadeOut();
-      },
-      error: function () { alert('Ошибка сохранения'); },
-    });
+    fetch('/config.save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function() {
+      var el = document.getElementById('save-ok');
+      el.classList.add('visible');
+      setTimeout(function() { el.classList.remove('visible'); }, 2000);
+    })
+    .catch(function() { alert('Ошибка сохранения'); });
   });
 
-  // ── Polygon editor ───────────────────────────────────────────
-  var activeLabel = null;
-  var points = [];          // [{cx, cy}, ...] in canvas space
+  // ── Polygon editor ──────────────────────────────────────
+  var activeLabel       = null;
+  var points            = [];
   var frameW = 1, frameH = 1;
-  var canvasImg = new Image();
-
+  var canvasImg         = new Image();
   var pendingExistingPts = [];
 
   function openPolygonEditor(label) {
     activeLabel = label;
     points = [];
+    document.getElementById('modal-cam-name').textContent = label;
 
-    $('#modal-cam-name').text(label);
-
-    // Load existing polygon from row
-    var row = $('#streams li[data-label="' + label + '"]');
-    var existing = row.attr('data-polygon');
+    var row = document.querySelector('.stream-item[data-label="' + label + '"]');
     pendingExistingPts = [];
-    if (existing) {
-      try { pendingExistingPts = JSON.parse(existing); } catch (e) {}
+    if (row && row.dataset.polygon) {
+      try { pendingExistingPts = JSON.parse(row.dataset.polygon); } catch(e) {}
     }
 
     canvasImg = new Image();
     canvasImg.src = '/snapshot/raw/' + label + '?' + Date.now();
-
-    $('#polygonModal').modal('show');
+    polygonModal.show();
   }
 
-  // Load canvas only after modal animation completes — wrap.clientWidth is correct here
-  $('#polygonModal').on('shown.bs.modal', function () {
+  // Canvas setup runs after modal animation completes (clientWidth is correct)
+  document.getElementById('polygonModal').addEventListener('shown.bs.modal', function() {
     var canvas = document.getElementById('polygon-canvas');
-    var wrap = document.getElementById('canvas-wrap');
+    var wrap   = document.getElementById('canvas-wrap');
 
     function renderCanvas() {
-      var maxW = wrap.clientWidth;
+      var maxW  = wrap.clientWidth;
       var scale = maxW / canvasImg.naturalWidth;
       canvas.width  = Math.round(canvasImg.naturalWidth  * scale);
       canvas.height = Math.round(canvasImg.naturalHeight * scale);
@@ -331,11 +453,10 @@ $(document).ready(function () {
       frameH = canvasImg.naturalHeight;
 
       if (pendingExistingPts.length === 4) {
-        points = pendingExistingPts.map(function (p) {
+        points = pendingExistingPts.map(function(p) {
           return { cx: p[0] * scale, cy: p[1] * scale };
         });
       }
-
       redraw();
     }
 
@@ -348,48 +469,40 @@ $(document).ready(function () {
 
   function redraw() {
     var canvas = document.getElementById('polygon-canvas');
-    var ctx = canvas.getContext('2d');
+    var ctx    = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(canvasImg, 0, 0, canvas.width, canvas.height);
 
-    if (points.length === 0) {
-      updateUI();
-      return;
-    }
+    if (points.length === 0) { updateUI(); return; }
 
-    // Draw filled polygon (semi-transparent)
+    // Filled polygon
     ctx.beginPath();
     ctx.moveTo(points[0].cx, points[0].cy);
-    for (var i = 1; i < points.length; i++) {
-      ctx.lineTo(points[i].cx, points[i].cy);
-    }
+    for (var i = 1; i < points.length; i++) ctx.lineTo(points[i].cx, points[i].cy);
     if (points.length === 4) ctx.closePath();
-    ctx.fillStyle = 'rgba(0, 200, 100, 0.15)';
+    ctx.fillStyle = 'rgba(67, 97, 238, 0.18)';
     ctx.fill();
 
-    // Draw edges
+    // Edges
     ctx.beginPath();
     ctx.moveTo(points[0].cx, points[0].cy);
-    for (var j = 1; j < points.length; j++) {
-      ctx.lineTo(points[j].cx, points[j].cy);
-    }
+    for (var j = 1; j < points.length; j++) ctx.lineTo(points[j].cx, points[j].cy);
     if (points.length === 4) ctx.closePath();
-    ctx.strokeStyle = '#00e676';
+    ctx.strokeStyle = '#4361ee';
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Draw vertices
-    points.forEach(function (p, idx) {
+    // Vertices
+    points.forEach(function(p, idx) {
       ctx.beginPath();
       ctx.arc(p.cx, p.cy, 6, 0, 2 * Math.PI);
       ctx.fillStyle = '#ffffff';
       ctx.fill();
-      ctx.strokeStyle = '#00e676';
+      ctx.strokeStyle = '#4361ee';
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      // Point number
-      ctx.fillStyle = '#00e676';
+      ctx.fillStyle = '#4361ee';
       ctx.font = 'bold 12px sans-serif';
       ctx.fillText(idx + 1, p.cx + 9, p.cy - 5);
     });
@@ -399,16 +512,16 @@ $(document).ready(function () {
 
   function updateUI() {
     var n = points.length;
-    $('#point-count').text('Точек: ' + n + ' / 4');
-    $('#btn-save-zone').prop('disabled', n !== 4);
+    document.getElementById('point-count').textContent = 'Точек: ' + n + ' / 4';
+    document.getElementById('btn-save-zone').disabled  = n !== 4;
   }
 
-  // ── Drag state ───────────────────────────────────────────────
-  var POINT_RADIUS = 10;   // px — hit area for grabbing a vertex
-  var dragPointIdx = -1;   // index of point being dragged (-1 = none)
-  var dragAll = false;     // dragging whole polygon
-  var dragStart = null;    // {cx, cy} mouse position at drag start
-  var pointsSnap = null;   // copy of points at drag start
+  // ── Drag state ──────────────────────────────────────────
+  var POINT_RADIUS = 10;
+  var dragPointIdx = -1;
+  var dragAll      = false;
+  var dragStart    = null;
+  var pointsSnap   = null;
 
   function getCanvasPos(e) {
     var rect = document.getElementById('polygon-canvas').getBoundingClientRect();
@@ -427,7 +540,7 @@ $(document).ready(function () {
   function isInsidePolygon(pos) {
     if (points.length < 4) return false;
     var canvas = document.getElementById('polygon-canvas');
-    var ctx = canvas.getContext('2d');
+    var ctx    = canvas.getContext('2d');
     ctx.beginPath();
     ctx.moveTo(points[0].cx, points[0].cy);
     for (var i = 1; i < points.length; i++) ctx.lineTo(points[i].cx, points[i].cy);
@@ -437,26 +550,25 @@ $(document).ready(function () {
 
   var canvas = document.getElementById('polygon-canvas');
 
-  canvas.addEventListener('mousedown', function (e) {
+  canvas.addEventListener('mousedown', function(e) {
     var pos = getCanvasPos(e);
     var idx = hitPointIndex(pos);
     if (idx !== -1) {
       dragPointIdx = idx;
-      dragStart = pos;
-      pointsSnap = points.map(function (p) { return { cx: p.cx, cy: p.cy }; });
+      dragStart    = pos;
+      pointsSnap   = points.map(function(p) { return { cx: p.cx, cy: p.cy }; });
       e.preventDefault();
     } else if (isInsidePolygon(pos)) {
-      dragAll = true;
-      dragStart = pos;
-      pointsSnap = points.map(function (p) { return { cx: p.cx, cy: p.cy }; });
+      dragAll    = true;
+      dragStart  = pos;
+      pointsSnap = points.map(function(p) { return { cx: p.cx, cy: p.cy }; });
       e.preventDefault();
     }
   });
 
-  canvas.addEventListener('mousemove', function (e) {
+  canvas.addEventListener('mousemove', function(e) {
     var pos = getCanvasPos(e);
 
-    // Update cursor
     if (dragPointIdx !== -1 || dragAll) {
       canvas.style.cursor = 'grabbing';
     } else if (hitPointIndex(pos) !== -1) {
@@ -473,27 +585,15 @@ $(document).ready(function () {
     } else if (dragAll && dragStart) {
       var dx = pos.cx - dragStart.cx;
       var dy = pos.cy - dragStart.cy;
-      points = pointsSnap.map(function (p) { return { cx: p.cx + dx, cy: p.cy + dy }; });
+      points = pointsSnap.map(function(p) { return { cx: p.cx + dx, cy: p.cy + dy }; });
       redraw();
     }
   });
 
-  canvas.addEventListener('mouseup', function () {
-    dragPointIdx = -1;
-    dragAll = false;
-    dragStart = null;
-    pointsSnap = null;
-  });
+  canvas.addEventListener('mouseup',    function() { dragPointIdx = -1; dragAll = false; dragStart = null; pointsSnap = null; });
+  canvas.addEventListener('mouseleave', function() { dragPointIdx = -1; dragAll = false; dragStart = null; pointsSnap = null; });
 
-  canvas.addEventListener('mouseleave', function () {
-    dragPointIdx = -1;
-    dragAll = false;
-    dragStart = null;
-    pointsSnap = null;
-  });
-
-  // Canvas click — add new point only when not dragging and < 4 points
-  canvas.addEventListener('click', function (e) {
+  canvas.addEventListener('click', function(e) {
     if (points.length >= 4) return;
     if (dragPointIdx !== -1 || dragAll) return;
     var pos = getCanvasPos(e);
@@ -502,43 +602,41 @@ $(document).ready(function () {
     redraw();
   });
 
-  // Clear
-  $('#btn-clear-zone').click(function () {
+  document.getElementById('btn-clear-zone').addEventListener('click', function() {
     points = [];
     redraw();
   });
 
-  // Save zone → write back to <li> data-polygon
-  $('#btn-save-zone').click(function () {
-    var scaleX = frameW / document.getElementById('polygon-canvas').width;
-    var scaleY = frameH / document.getElementById('polygon-canvas').height;
-    var framePoints = points.map(function (p) {
+  document.getElementById('btn-save-zone').addEventListener('click', function() {
+    var cvs    = document.getElementById('polygon-canvas');
+    var scaleX = frameW / cvs.width;
+    var scaleY = frameH / cvs.height;
+    var framePoints = points.map(function(p) {
       return [Math.round(p.cx * scaleX), Math.round(p.cy * scaleY)];
     });
 
-    var row = $('#streams li[data-label="' + activeLabel + '"]');
-    row.attr('data-polygon', JSON.stringify(framePoints));
+    var row = document.querySelector('.stream-item[data-label="' + activeLabel + '"]');
+    row.dataset.polygon = JSON.stringify(framePoints);
 
-    // Update badge
-    row.find('.badge').removeClass('badge-secondary badge-success badge-zone-empty')
-       .addClass('badge-success').text('Зона');
+    var badge = row.querySelector('.badge');
+    badge.className   = 'badge text-bg-success ms-1';
+    badge.textContent = 'Зона';
 
-    $('#polygonModal').modal('hide');
+    polygonModal.hide();
   });
 
-  // Reset on close
-  $('#polygonModal').on('hidden.bs.modal', function () {
-    points = [];
-    activeLabel = null;
-    dragPointIdx = -1;
-    dragAll = false;
-    var ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    canvas.style.cursor = 'crosshair';
+  document.getElementById('polygonModal').addEventListener('hidden.bs.modal', function() {
+    points        = [];
+    activeLabel   = null;
+    dragPointIdx  = -1;
+    dragAll       = false;
+    var cvs = document.getElementById('polygon-canvas');
+    cvs.getContext('2d').clearRect(0, 0, cvs.width, cvs.height);
+    cvs.style.cursor = 'crosshair';
     updateUI();
   });
 
-});
+}); // DOMContentLoaded
 </script>
 </body>
 </html>

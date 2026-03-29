@@ -2,66 +2,181 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
-        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <title>camTGrtsp — События</title>
   <style>
-    body { background: #f8f9fa; }
-    .navbar-brand { font-weight: 700; letter-spacing: 1px; }
-    #status { font-size: .8rem; color: #6c757d; }
-    .alarm-card { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); overflow: hidden; margin-bottom: 1rem; }
-    .alarm-card img { width: 100%; display: block; cursor: pointer; }
-    .alarm-card .info { padding: .4rem .65rem; font-size: .8rem; color: #495057; line-height: 1.4; }
-    .alarm-card .cam { font-weight: 600; }
-    #no-data-msg { display: none; color: #6c757d; padding: 3rem; text-align: center; }
+    :root {
+      --accent:      #4361ee;
+      --accent-h:    #3451d1;
+      --bg:          #f4f6fb;
+      --card-bg:     #ffffff;
+      --card-shadow: 0 1px 8px rgba(0,0,0,.06);
+      --card-shadow-h: 0 4px 20px rgba(67,97,238,.12);
+      --card-radius: 12px;
+      --nav-h:       54px;
+      --border:      #e8ecf4;
+      --font:        'Outfit', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { background: var(--bg); font-family: var(--font); }
+
+    /* ── Navbar ─────────────────────────────────────────── */
+    .app-nav {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      height: var(--nav-h);
+      display: flex;
+      align-items: center;
+      padding: 0 1.25rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .app-brand {
+      font-weight: 700;
+      font-size: .95rem;
+      color: var(--accent);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+    }
+    .app-brand:hover { color: var(--accent-h); }
+
+    /* ── Page wrap ──────────────────────────────────────── */
+    .page-wrap { padding: 1.5rem 1.25rem; }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: .75rem;
+      margin-bottom: 1.25rem;
+    }
+    .page-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #1a1d2e;
+      margin: 0;
+      letter-spacing: -.3px;
+    }
+    #status { font-size: .78rem; color: #9ca3af; margin-left: auto; }
+
+    /* ── Filter buttons ─────────────────────────────────── */
+    #cam-filter { display: flex; flex-wrap: wrap; gap: .35rem; }
+    #cam-filter .btn {
+      font-size: .78rem;
+      padding: .25rem .65rem;
+      border-radius: 6px;
+      font-family: var(--font);
+    }
+    #cam-filter .btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    /* ── Alarm card ─────────────────────────────────────── */
+    .alarm-card {
+      background: var(--card-bg);
+      border-radius: var(--card-radius);
+      box-shadow: var(--card-shadow);
+      overflow: hidden;
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .alarm-card:hover {
+      transform: scale(1.018);
+      box-shadow: var(--card-shadow-h);
+    }
+    .alarm-card a { display: block; line-height: 0; }
+    .alarm-card img {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      display: block;
+      background: #0d0d14;
+    }
+    .alarm-info {
+      padding: .4rem .65rem;
+      font-size: .75rem;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+    .alarm-cam { font-weight: 700; color: #1a1d2e; }
+
+    /* ── Empty / load-more ──────────────────────────────── */
+    #no-data-msg {
+      display: none;
+      color: #9ca3af;
+      padding: 3rem;
+      text-align: center;
+      font-size: .9rem;
+    }
     #load-more { display: none; }
   </style>
 </head>
 <body>
 
-<nav class="navbar navbar-dark bg-dark mb-4">
-  <a class="navbar-brand" href="/">📷 camTGrtsp</a>
-  <a class="btn btn-sm btn-outline-light" href="/">← Главная</a>
+<nav class="app-nav">
+  <a class="app-brand" href="/">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M23 7l-7 5 7 5V7z"/>
+      <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+    </svg>
+    camTGrtsp
+  </a>
+  <div class="ms-auto">
+    <a href="/" class="btn btn-sm" style="font-size:.8rem; color:#6b7280; border:1px solid var(--border);">← Главная</a>
+  </div>
 </nav>
 
-<div class="container-fluid px-4">
-  <div class="d-flex align-items-center flex-wrap mb-3">
-    <h5 class="mb-0 mr-3">События</h5>
-    <div class="btn-group btn-group-sm mr-3" id="cam-filter" role="group"></div>
-    <span id="status" class="ml-auto">загрузка...</span>
+<div class="page-wrap">
+
+  <div class="page-header">
+    <h1 class="page-title">События</h1>
+    <div id="cam-filter"></div>
+    <span id="status">загрузка…</span>
   </div>
 
-  <div class="row" id="alarm-grid"></div>
+  <div class="row g-3" id="alarm-grid"></div>
   <div id="no-data-msg">Событий пока нет.</div>
 
-  <div class="text-center mb-5">
-    <button class="btn btn-outline-secondary" id="load-more">Загрузить ещё</button>
+  <div class="text-center mt-2 mb-5">
+    <button class="btn btn-outline-secondary btn-sm" id="load-more" style="font-size:.8rem; padding:.35rem 1.25rem;">
+      Загрузить ещё
+    </button>
   </div>
+
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  const LIMIT = 50;
-  let currentCam = 'all';
-  let currentOffset = 0;
-  let allCams = [];
-  let isLoading = false;
+  var LIMIT = 50;
+  var currentCam    = 'all';
+  var currentOffset = 0;
+  var allCams       = [];
+  var isLoading     = false;
 
   function formatDate(dateStr) {
-    const [y, m, d] = dateStr.split('-');
-    return d + '.' + m + '.' + y;
+    var parts = dateStr.split('-');
+    return parts[2] + '.' + parts[1] + '.' + parts[0];
   }
 
   function renderCard(item) {
-    const col = document.createElement('div');
+    var col = document.createElement('div');
     col.className = 'col-6 col-sm-4 col-md-3 col-lg-2';
     col.innerHTML =
       '<div class="alarm-card">' +
         '<a href="' + item.url + '" target="_blank">' +
           '<img src="' + item.url + '" loading="lazy" alt="' + item.cam + '">' +
         '</a>' +
-        '<div class="info">' +
-          '<span class="cam">' + item.cam + '</span><br>' +
+        '<div class="alarm-info">' +
+          '<div class="alarm-cam">' + item.cam + '</div>' +
           formatDate(item.date) + ' ' + item.time +
         '</div>' +
       '</div>';
@@ -69,20 +184,20 @@
   }
 
   function renderFilterButtons() {
-    const container = document.getElementById('cam-filter');
+    var container = document.getElementById('cam-filter');
     container.innerHTML = '';
-
-    [{ id: 'all', label: 'Все' }].concat(allCams.map(c => ({ id: c, label: c }))).forEach(function(entry) {
-      const btn = document.createElement('button');
-      btn.className = 'btn btn-outline-secondary' + (currentCam === entry.id ? ' active font-weight-bold' : '');
-      btn.textContent = entry.label;
-      btn.addEventListener('click', function() { switchCam(entry.id); });
-      container.appendChild(btn);
-    });
+    [{ id: 'all', label: 'Все' }].concat(allCams.map(function(c) { return { id: c, label: c }; }))
+      .forEach(function(entry) {
+        var btn = document.createElement('button');
+        btn.className = 'btn btn-outline-secondary' + (currentCam === entry.id ? ' active' : '');
+        btn.textContent = entry.label;
+        btn.addEventListener('click', function() { switchCam(entry.id); });
+        container.appendChild(btn);
+      });
   }
 
   function switchCam(cam) {
-    currentCam = cam;
+    currentCam    = cam;
     currentOffset = 0;
     document.getElementById('alarm-grid').innerHTML = '';
     renderFilterButtons();
@@ -93,24 +208,25 @@
     if (isLoading) return;
     isLoading = true;
     document.getElementById('load-more').disabled = true;
-    const url = '/api/alarms?cam=' + currentCam + '&offset=' + currentOffset + '&limit=' + LIMIT;
+
+    var url = '/api/alarms?cam=' + currentCam + '&offset=' + currentOffset + '&limit=' + LIMIT;
     fetch(url)
       .then(function(r) { return r.json(); })
       .then(function(data) {
-        // Кнопки камер строим один раз — при первом ответе
         if (allCams.length === 0 && data.cams.length > 0) {
           allCams = data.cams;
           renderFilterButtons();
         }
 
-        const grid = document.getElementById('alarm-grid');
+        var grid = document.getElementById('alarm-grid');
         data.items.forEach(function(item) { grid.appendChild(renderCard(item)); });
 
-        const shown = currentOffset + data.items.length;
+        var shown = currentOffset + data.items.length;
         document.getElementById('no-data-msg').style.display = shown === 0 ? 'block' : 'none';
-        document.getElementById('load-more').style.display = data.has_more ? 'block' : 'none';
+        document.getElementById('load-more').style.display   = data.has_more ? 'block' : 'none';
         document.getElementById('status').textContent =
-          'Показано ' + shown + (data.has_more ? '+' : '') + ' · ' + new Date().toLocaleTimeString('ru-RU');
+          'Показано ' + shown + (data.has_more ? '+' : '') +
+          ' · ' + new Date().toLocaleTimeString('ru-RU');
 
         currentOffset = shown;
         isLoading = false;
@@ -125,7 +241,6 @@
   }
 
   document.getElementById('load-more').addEventListener('click', load);
-
   load();
 </script>
 </body>
