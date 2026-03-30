@@ -234,7 +234,7 @@ def detect(stream):
         point = Point(*point_loc)
 
         alarm_object_name = str(classes[class_ids[idx]])
-        if alarm_object_name not in ignored_classes and checkAlarm(name, alarm_object_name, point_loc, confidences[idx]):
+        if alarm_object_name not in ignored_classes and checkAlarm(name, alarm_object_name, point_loc):
             in_zone = polygon is None or polygon.contains(point)
             if in_zone:
                 # Объект внутри зоны — алерт
@@ -256,7 +256,7 @@ def detect(stream):
     return image
 
 
-def checkAlarm(cam, name, point, confidence):
+def checkAlarm(cam, name, point):
     """
     Антиспам алертов.
 
@@ -279,11 +279,11 @@ def checkAlarm(cam, name, point, confidence):
         if (alarm['cam'] == cam
                 and alarm['name'] == name
                 and abs(alarm['point'][0] - point[0]) + abs(alarm['point'][1] - point[1]) < 30):
-            state.logger.debug('Antispam: suppressed %s cam=%s conf=%.2f at (%d,%d), repeat within %ds window',
-                               name, cam, confidence, point[0], point[1], WINDOW)
+            state.logger.debug('Antispam: suppressed %s cam=%s at (%d,%d), repeat within %ds window',
+                               name, cam, point[0], point[1], WINDOW)
             return False
 
-    notified.append({'cam': cam, 'name': name, 'point': point, 'confidence': confidence, 'time': now})
+    notified.append({'cam': cam, 'name': name, 'point': point, 'time': now})
     return True
 
 
