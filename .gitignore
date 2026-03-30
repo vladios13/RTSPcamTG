@@ -11,8 +11,6 @@ __pycache__/
 
 cfg/*.weights
 config.json
-
-*.jpg
 !screenshot.jpg
 
 venv/
