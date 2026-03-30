@@ -144,6 +144,11 @@ async def api_stats(request):
     })
 
 
+@app.route('/about')
+async def about_page(request):
+    return template('about.html')
+
+
 @app.route('/movement')
 async def movement_page(request):
     return template('movement.html')
