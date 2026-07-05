@@ -1,6 +1,13 @@
 # camTGrtsp
 
-Мониторинг IP-камер по RTSP с детекцией объектов (YOLOv4) и отправкой уведомлений в Telegram. Без облачных зависимостей.
+Мониторинг IP-камер по RTSP с детекцией объектов (YOLOv8) и отправкой уведомлений в Telegram. Без облачных зависимостей.
+
+![Python](https://img.shields.io/badge/Python-3.8-3776AB?logo=python&logoColor=white)
+![OpenCV](https://img.shields.io/badge/OpenCV-4.9-5C3EE8?logo=opencv&logoColor=white)
+![YOLOv8](https://img.shields.io/badge/YOLOv8-ONNX-00FFFF?logo=onnx&logoColor=black)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![Telegram](https://img.shields.io/badge/Telegram-Bot-26A5E4?logo=telegram&logoColor=white)
+![Platform](https://img.shields.io/badge/Platform-Linux-FCC624?logo=linux&logoColor=black)
 
 ## Скриншоты
 
@@ -10,9 +17,12 @@
 
 ## Быстрый старт
 
+Веса модели (`cfg/yolov8n.onnx`, ~13 МБ) уже в репозитории — скачивать отдельно не нужно.
+
 ```bash
-# 1. Скачайте веса модели (~250 MB)
-wget -q https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.weights -P cfg/
+# 1. Клонируйте репозиторий
+git clone https://github.com/vladios13/camTGrtsp.git
+cd camTGrtsp
 
 # 2. Заполните конфиг
 cp config.json.example config.json
@@ -34,13 +44,14 @@ docker compose build && docker compose up -d
 ```json
 {
   "tg_token": "123456:ABC-DEF...",
-  "tg_chat": "-100123456789",
+  "tg_chat": -100123456789,
   "stream_startup_delay_s": 2,
   "streams": [
     {
       "label": "front_door",
       "url": "rtsp://user:pass@192.168.1.10/stream",
-      "detect_in_polygon": [[100,200],[400,200],[400,500],[100,500]]
+      "detect_in_polygon": [[100,200],[400,200],[400,500],[100,500]],
+      "ignore": []
     }
   ]
 }
@@ -48,11 +59,11 @@ docker compose build && docker compose up -d
 
 `detect_in_polygon` — список точек (x, y). Редактор полигонов доступен в Web UI (`/config`).
 
-## Web UI (порт 8000, только localhost)
+## Web UI
 
 Bootstrap 5.3.3, без jQuery, адаптивный. Шрифт Manrope, светлая тема, индиго акцент. Снапшоты камер обновляются каждые 2 секунды через onload-цепочку — без накопления очереди запросов к серверу.
 
-| Путь | Описание |
+| Путь (порт 8000) | Описание |
 |---|---|
 | `/` | Сетка live-снапшотов всех камер |
 | `/config` | Настройка потоков, Telegram, polygon-зон |
@@ -62,7 +73,7 @@ Bootstrap 5.3.3, без jQuery, адаптивный. Шрифт Manrope, све
 
 ## Как работает
 
-- Система получает видео с камер по RTSP и анализирует каждый кадр через YOLOv4.
+- Система получает видео с камер по RTSP и анализирует каждый кадр через YOLOv8n (инференс через ONNX + `cv2.dnn`).
 - Если в заданной зоне обнаружен человек (или другой отслеживаемый объект) — отправляется фото в Telegram с подписью: камера, время, что обнаружено.
 - Одно и то же срабатывание не дублируется: повторные уведомления об одном объекте в той же точке подавляются на 5 минут.
 - При обрыве соединения с камерой система автоматически переподключается с нарастающим интервалом: 5→10→20→40→60 сек.
@@ -70,15 +81,25 @@ Bootstrap 5.3.3, без jQuery, адаптивный. Шрифт Manrope, све
 
 Telegram-команды: `/ustop` — пауза детекции, `/ustart` — возобновить.
 
+## Пересборка модели
+
+Если нужно обновить или сменить веса — `scripts/export_yolov8.py` экспортирует `yolov8n.pt` в ONNX:
+
+```bash
+python -m venv /tmp/yolo-export && . /tmp/yolo-export/bin/activate
+pip install ultralytics onnx onnxslim
+python scripts/export_yolov8.py   # → cfg/yolov8n.onnx
+```
+
 ## Зависимости
 
 - Python 3.8
-- OpenCV 4.5.5 (DNN inference)
-- YOLOv4 (~250 MB, скачиваются отдельно)
+- OpenCV 4.9.0
+- YOLOv8n (ONNX, ~13 МБ, в комплекте, скачивать отдельно не нужно)
 - aiogram 3.7.0
 - Sanic 19.12.5
 - Shapely, Jinja2
-- Docker / docker-compose (лимит CPU контейнера: 0.85)
+- Docker / docker-compose (лимит CPU контейнера: 0.4)
 
 ---
 
