@@ -60,9 +60,8 @@ stopProcess = False
 ap = argparse.ArgumentParser()
 ap.add_argument('-d', '--debug', required=False, help='path to input image')
 ap.add_argument('-od', '--outputdir', required=False, help='path to output folder', default='output')
-ap.add_argument('-c', '--config', required=False, help='path to yolo config file', default='cfg/yolov4.cfg')
-ap.add_argument('-w', '--weights', required=False, help='path to yolo pre-trained weights', default='cfg/yolov4.weights')
-ap.add_argument('-cl', '--classes', required=False, help='path to text file containing class names', default='cfg/yolov4.txt')
+ap.add_argument('-w', '--weights', required=False, help='path to YOLOv8 ONNX model', default='cfg/yolov8n.onnx')
+ap.add_argument('-cl', '--classes', required=False, help='path to text file containing class names', default='cfg/yolov8.txt')
 ap.add_argument('-ic', '--invertcolor', required=False, help='invert RGB 2 BGR', default='false')
 args = ap.parse_args()
 

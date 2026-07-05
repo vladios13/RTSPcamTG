@@ -12,11 +12,14 @@ from app import state
 from app import notifier
 
 classes = None
+# Имена классов — в нейминге ultralytics COCO (см. cfg/yolov8.txt).
+# Отличия от darknet-имён YOLOv4: tvmonitor→tv, aeroplane→airplane,
+# motorbike→motorcycle, pottedplant→potted plant, diningtable→dining table.
 ignored_classes = [
-    'tvmonitor', 'sports ball', 'bottle', 'bird', 'truck', 'bicycle', 'banana', 'surfboard',
-    'refrigerator', 'sheep', 'traffic light', 'aeroplane', 'motorbike', 'umbrella', 'chair',
-    'boat', 'pottedplant', 'fire hydrant', 'train', 'bus', 'bowl', 'cup', 'frisbee', 'bench',
-    'diningtable', 'suitcase', 'backpack', 'vase',
+    'tv', 'sports ball', 'bottle', 'bird', 'truck', 'bicycle', 'banana', 'surfboard',
+    'refrigerator', 'sheep', 'traffic light', 'airplane', 'motorcycle', 'umbrella', 'chair',
+    'boat', 'potted plant', 'fire hydrant', 'train', 'bus', 'bowl', 'cup', 'frisbee', 'bench',
+    'dining table', 'suitcase', 'backpack', 'vase',
 ]
 
 with open(state.args.classes, 'r') as f:
@@ -51,11 +54,11 @@ def _get_cuda_device_count():
 
 
 def init_model():
-    """Загружает YOLO-модель один раз при старте. Вызывается из main.py."""
+    """Загружает YOLOv8 ONNX-модель один раз при старте. Вызывается из main.py."""
     global net
-    state.logger.info('Loading YOLO model: %s + %s', state.args.weights, state.args.config)
-    net = cv2.dnn.readNet(state.args.weights, state.args.config)
-    state.logger.info('YOLO model loaded successfully')
+    state.logger.info('Loading YOLOv8 ONNX model: %s', state.args.weights)
+    net = cv2.dnn.readNetFromONNX(state.args.weights)
+    state.logger.info('YOLOv8 ONNX model loaded successfully')
 
     cuda_devices = _get_cuda_device_count()
     if cuda_devices > 0:
@@ -68,13 +71,27 @@ def init_model():
         state.logger.info('YOLO: CPU backend (CUDA unavailable)')
 
 
-def get_output_layers(net):
-    layer_names = net.getLayerNames()
-    unconnected = net.getUnconnectedOutLayers()
-    # OpenCV <4.5 возвращает shape (n,1); OpenCV >=4.5 — плоский массив
-    if unconnected.ndim == 2:
-        return [layer_names[i[0] - 1] for i in unconnected]
-    return [layer_names[i - 1] for i in unconnected]
+INPUT_SIZE = 416  # размер входа сети (совпадает с imgsz при экспорте ONNX)
+
+
+def letterbox(img, new_shape=INPUT_SIZE, color=(114, 114, 114)):
+    """Ресайз с сохранением пропорций и паддингом до квадрата new_shape×new_shape.
+
+    Повторяет препроцессинг ultralytics (LetterBox), чтобы не искажать
+    16:9-кадры при сжатии до квадрата. Возвращает (padded, r, (pad_left, pad_top)),
+    где r — коэффициент масштаба, pad_* — смещения для обратного пересчёта боксов.
+    """
+    h, w = img.shape[:2]
+    r = min(new_shape / h, new_shape / w)
+    new_w, new_h = round(w * r), round(h * r)
+    resized = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+
+    dw, dh = new_shape - new_w, new_shape - new_h
+    top, bottom = dh // 2, dh - dh // 2
+    left, right = dw // 2, dw - dw // 2
+    padded = cv2.copyMakeBorder(resized, top, bottom, left, right,
+                                cv2.BORDER_CONSTANT, value=color)
+    return padded, r, (left, top)
 
 
 def save_bounded_image(image, class_id, confidence, x, y, x_plus_w, y_plus_h):
@@ -181,13 +198,14 @@ def detect(stream):
 
     state.framebuffer[name2] = image
 
-    Width = image.shape[1]
-    Height = image.shape[0]
-    scale = 0.00392
-
-    blob = cv2.dnn.blobFromImage(image, scale, (416, 416), (0, 0, 0), True, crop=False)
+    # Letterbox-препроцессинг: паддинг с сохранением пропорций до INPUT_SIZE.
+    padded, ratio, (pad_left, pad_top) = letterbox(image, INPUT_SIZE)
+    blob = cv2.dnn.blobFromImage(padded, 1 / 255.0, (INPUT_SIZE, INPUT_SIZE),
+                                 (0, 0, 0), True, crop=False)
     net.setInput(blob)
-    outs = net.forward(get_output_layers(net))
+    # Выход YOLOv8: (1, 84, N) — 4 коорд бокса (cx,cy,w,h) + 80 class scores.
+    # Без objectness (в отличие от YOLOv4). Транспонируем в (N, 84).
+    out = np.squeeze(net.forward()).T
 
     class_ids = []
     confidences = []
@@ -195,21 +213,18 @@ def detect(stream):
     conf_threshold = 0.5
     nms_threshold = 0.4
 
-    for out in outs:
-        for detection in out:
-            scores = detection[5:]
-            class_id = np.argmax(scores)
-            confidence = scores[class_id]
-            if confidence > 0.5:
-                center_x = int(detection[0] * Width)
-                center_y = int(detection[1] * Height)
-                w = int(detection[2] * Width)
-                h = int(detection[3] * Height)
-                x = center_x - w / 2
-                y = center_y - h / 2
-                class_ids.append(class_id)
-                confidences.append(float(confidence))
-                boxes.append([x, y, w, h])
+    for row in out:
+        scores = row[4:]
+        class_id = np.argmax(scores)
+        confidence = scores[class_id]
+        if confidence > conf_threshold:
+            cx, cy, w, h = row[0], row[1], row[2], row[3]
+            # Обратный letterbox-пересчёт в пиксели исходного кадра.
+            x = (cx - w / 2 - pad_left) / ratio
+            y = (cy - h / 2 - pad_top) / ratio
+            class_ids.append(int(class_id))
+            confidences.append(float(confidence))
+            boxes.append([x, y, w / ratio, h / ratio])
 
     indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
 
