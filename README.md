@@ -103,4 +103,4 @@ python scripts/export_yolov8.py   # → cfg/yolov8n.onnx
 
 ---
 
-Forked from [Nalorokk/ultracam](https://github.com/Nalorokk/ultracam)
+Основано на [Nalorokk/ultracam](https://github.com/Nalorokk/ultracam), развивается независимо.
