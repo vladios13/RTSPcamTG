@@ -17,7 +17,7 @@ def _sigterm_handler(signum, frame):
 
 
 if __name__ == '__main__':
-    state.logger.info('CamTGrtsp startup')
+    state.logger.info('RTSPcamTG startup')
 
     if platform.system() == 'Linux':
         nice = os.nice(5)

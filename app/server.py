@@ -26,7 +26,7 @@ def template(tpl, **kwargs):
     return html(t.render(kwargs))
 
 
-app = Sanic('camTGrtsp')
+app = Sanic('RTSPcamTG')
 
 app.static('/static', './static')
 app.static('/alarm-files', './alarm')

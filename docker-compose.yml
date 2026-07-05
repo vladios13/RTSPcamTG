@@ -1,9 +1,9 @@
 services:
-  camtgrtsp:
+  RTSPcamTG:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: camTGrtsp
+    container_name: RTSPcamTG
     ports:
       - "127.0.0.1:8000:8000"  # Web UI только на localhost
     volumes:

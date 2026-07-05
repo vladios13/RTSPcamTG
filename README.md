@@ -1,4 +1,4 @@
-# camTGrtsp
+# RTSPcamTG
 
 Мониторинг IP-камер по RTSP с детекцией объектов (YOLOv8) и отправкой уведомлений в Telegram. Без облачных зависимостей.
 
@@ -21,8 +21,8 @@
 
 ```bash
 # 1. Клонируйте репозиторий
-git clone https://github.com/vladios13/camTGrtsp.git
-cd camTGrtsp
+git clone https://github.com/vladios13/RTSPcamTG.git
+cd RTSPcamTG
 
 # 2. Заполните конфиг
 cp config.json.example config.json
