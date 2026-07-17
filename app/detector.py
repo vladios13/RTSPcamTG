@@ -20,6 +20,7 @@ ignored_classes = [
     'refrigerator', 'sheep', 'traffic light', 'airplane', 'motorcycle', 'umbrella', 'chair',
     'boat', 'potted plant', 'fire hydrant', 'train', 'bus', 'bowl', 'cup', 'frisbee', 'bench',
     'dining table', 'suitcase', 'backpack', 'vase',
+    'elephant', 'bear', 'teddy bear', 'zebra', 'giraffe', 'tennis racket', 'kite',
 ]
 
 with open(state.args.classes, 'r') as f:
