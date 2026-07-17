@@ -1,9 +1,9 @@
 services:
-  RTSPcamTG:
+  rtspcamtg:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: RTSPcamTG
+    container_name: rtspcamtg
     ports:
       - "127.0.0.1:8000:8000"  # Web UI только на localhost
     volumes:
