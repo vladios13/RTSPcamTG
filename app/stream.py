@@ -13,7 +13,11 @@ RTSP_OPEN_TIMEOUT_MS = 10000
 
 # Force RTSP over TCP; timeout (µs) prevents VideoCapture() from blocking on a dead link.
 # FFmpeg 5.x renamed the RTSP socket option stimeout->timeout; the old name is ignored (default 30s).
-os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'rtsp_transport;tcp|timeout;%d' % (RTSP_TIMEOUT_MS * 1000)
+# discardcorrupt: drop partially-decoded frames (lost mid-frame slice) instead of returning them
+# half-smeared — read() gives ret=False for those, so the reconnect/skip logic handles them cleanly.
+os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = (
+    'rtsp_transport;tcp|timeout;%d|fflags;discardcorrupt' % (RTSP_TIMEOUT_MS * 1000)
+)
 
 _stream_threads: list = []
 
