@@ -1,0 +1,84 @@
+/* ── app.css — общие стили всех страниц RTSPcamTG ──────────
+   Единый источник: переменные темы, навбар, live-бейдж,
+   prefers-reduced-motion. Подключается после bootstrap.min.css. */
+
+:root {
+  --accent:        #4361ee;
+  --accent-h:      #3451d1;
+  --accent-rgb:    67, 97, 238;
+  --bg:            #f4f6fb;
+  --card-bg:       #ffffff;
+  --card-shadow:   0 1px 8px rgba(0, 0, 0, .06);
+  --card-shadow-h: 0 4px 20px rgba(var(--accent-rgb), .12);
+  --card-radius:   12px;
+  --nav-h:         54px;
+  --border:        #e8ecf4;
+  --font:          'Manrope', sans-serif;
+
+  /* Текст */
+  --text:          #1a1d2e;   /* заголовки */
+  --text-soft:     #374151;   /* основной текст */
+  --text-mid:      #6b7280;   /* второстепенный */
+  --text-muted:    #9ca3af;   /* подписи, хинты */
+  --muted:         #6c757d;   /* alias для мелких подписей */
+
+  --frame-bg:      #0d0d14;   /* фон под видеокадром */
+  --ok:            #22c55e;   /* успех */
+}
+
+body { background: var(--bg); font-family: var(--font); }
+
+/* ── Navbar ─────────────────────────────────────────────── */
+.app-nav {
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  height: var(--nav-h);
+  display: flex;
+  align-items: center;
+  padding: 0 1.25rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.app-brand {
+  font-weight: 700;
+  font-size: .95rem;
+  color: var(--accent);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+}
+.app-brand:hover { color: var(--accent-h); }
+
+/* Кнопки навбара */
+.app-nav .btn { font-size: .8rem; }
+.nav-about    { padding: .25rem .45rem; }
+.nav-back     { color: var(--text-mid); border: 1px solid var(--border); }
+.nav-back:hover { color: var(--text-soft); }
+
+/* ── Live-бейдж ─────────────────────────────────────────── */
+.badge-live {
+  background: #ef4444;
+  color: #fff;
+  font-size: .6rem;
+  font-weight: 700;
+  letter-spacing: .09em;
+  padding: .2em .5em;
+  border-radius: 4px;
+  text-transform: uppercase;
+  animation: pulse-live 1.6s ease-in-out infinite;
+}
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .4; }
+}
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}

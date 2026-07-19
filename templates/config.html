@@ -5,45 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="/static/fonts/manrope.css">
   <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/css/app.css">
   <title>RTSPcamTG — Config</title>
   <style>
-    :root {
-      --accent:      #4361ee;
-      --accent-h:    #3451d1;
-      --bg:          #f4f6fb;
-      --card-bg:     #ffffff;
-      --card-shadow: 0 1px 8px rgba(0,0,0,.06);
-      --card-radius: 12px;
-      --nav-h:       54px;
-      --border:      #e8ecf4;
-      --font:        'Manrope', sans-serif;
-    }
-
-    body { background: var(--bg); font-family: var(--font); }
-
-    /* ── Navbar ─────────────────────────────────────────── */
-    .app-nav {
-      background: #fff;
-      border-bottom: 1px solid var(--border);
-      height: var(--nav-h);
-      display: flex;
-      align-items: center;
-      padding: 0 1.25rem;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .app-brand {
-      font-weight: 700;
-      font-size: .95rem;
-      color: var(--accent);
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: .45rem;
-    }
-    .app-brand:hover { color: var(--accent-h); }
-
     /* ── Page wrap ──────────────────────────────────────── */
     .page-wrap {
       padding: 1.5rem 1rem;
@@ -62,14 +26,14 @@
     .section-label {
       font-size: .68rem;
       font-weight: 700;
-      color: #9ca3af;
+      color: var(--text-muted);
       letter-spacing: .08em;
       text-transform: uppercase;
       margin-bottom: .85rem;
     }
 
     /* ── Form fields ────────────────────────────────────── */
-    .form-label { font-size: .85rem; font-weight: 500; color: #374151; margin-bottom: .3rem; }
+    .form-label { font-size: .85rem; font-weight: 500; color: var(--text-soft); margin-bottom: .3rem; }
     .form-control {
       font-family: var(--font);
       font-size: .875rem;
@@ -78,7 +42,7 @@
     }
     .form-control:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(67,97,238,.12);
+      box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .12);
     }
 
     /* ── Stream list ────────────────────────────────────── */
@@ -94,15 +58,15 @@
       background: #fff;
     }
     .stream-label { min-width: 0; overflow: hidden; flex: 1; }
-    .stream-label strong { font-size: .875rem; color: #1a1d2e; }
-    .stream-label small  { color: #9ca3af; font-size: .75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+    .stream-label strong { font-size: .875rem; color: var(--text); }
+    .stream-label small  { color: var(--text-muted); font-size: .75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
     .stream-actions { display: flex; align-items: center; gap: .35rem; flex-shrink: 0; }
     .stream-actions .btn { font-size: .75rem; padding: .2rem .55rem; border-radius: 6px; }
 
     /* ── Save notice ────────────────────────────────────── */
     #save-ok {
       font-size: .8rem;
-      color: #22c55e;
+      color: var(--ok);
       font-weight: 600;
       opacity: 0;
       transition: opacity .3s;
@@ -111,8 +75,8 @@
 
     /* ── Polygon canvas ─────────────────────────────────── */
     #polygon-canvas { cursor: crosshair; display: block; max-width: 100%; }
-    #canvas-wrap    { position: relative; background: #000; line-height: 0; width: 100%; border-radius: 8px; overflow: hidden; }
-    .point-hint     { font-size: .8rem; color: #6b7280; }
+    #canvas-wrap    { position: relative; background: var(--frame-bg); line-height: 0; width: 100%; border-radius: 8px; overflow: hidden; }
+    .point-hint     { font-size: .8rem; color: var(--text-mid); }
 
     /* ── Modal tweaks ───────────────────────────────────── */
     .modal-content {
@@ -123,29 +87,15 @@
     }
     .modal-header { border-bottom: 1px solid var(--border); padding: 1rem 1.25rem; }
     .modal-footer { border-top: 1px solid var(--border); padding: .75rem 1.25rem; }
-    .modal-title  { font-size: .95rem; font-weight: 700; color: #1a1d2e; }
+    .modal-title  { font-size: .95rem; font-weight: 700; color: var(--text); }
   </style>
 </head>
 <body>
 
-<nav class="app-nav">
-  <a class="app-brand" href="/">
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M23 7l-7 5 7 5V7z"/>
-      <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-    </svg>
-    RTSPcamTG
-  </a>
-  <div class="ms-auto d-flex align-items-center gap-2">
-    <span id="save-ok">Сохранено</span>
-    <a href="/about" class="btn btn-sm btn-outline-secondary" style="font-size:.8rem; padding:.25rem .45rem;" title="О проекте">
-      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16">
-        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-        <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
-      </svg>
-    </a>
-  </div>
-</nav>
+{% set nav_actions %}
+  <span id="save-ok">Сохранено</span>
+{% endset %}
+{% include 'partials/navbar.html' %}
 
 <div class="page-wrap">
 
@@ -323,25 +273,35 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  // ── Stream validation (общая для add / edit) ────────────
+  // Возвращает текст ошибки или '' если данные валидны.
+  // exceptLabel — исключить из проверки на дубликат (при редактировании).
+  function validateStream(label, url, exceptLabel) {
+    if (!label || !/^[a-zA-Z0-9_-]+$/.test(label)) {
+      return 'Label: только латиница, цифры, _ и -';
+    }
+    if (label !== exceptLabel && document.querySelector('.stream-item[data-label="' + label + '"]')) {
+      return 'Камера с таким label уже существует';
+    }
+    if (!url || !url.startsWith('rtsp://')) {
+      return 'URL должен начинаться с rtsp://';
+    }
+    return '';
+  }
+
+  function showError(errEl, msg) {
+    if (msg) { errEl.textContent = msg; errEl.classList.remove('d-none'); }
+    else     { errEl.classList.add('d-none'); }
+    return !msg;
+  }
+
   // ── Add stream ──────────────────────────────────────────
   document.getElementById('btn-add-stream').addEventListener('click', function() {
     var label  = document.getElementById('new-label').value.trim();
     var url    = document.getElementById('new-url').value.trim();
     var errEl  = document.getElementById('add-stream-error');
 
-    if (!label || !/^[a-zA-Z0-9_-]+$/.test(label)) {
-      errEl.textContent = 'Label: только латиница, цифры, _ и -';
-      errEl.classList.remove('d-none'); return;
-    }
-    if (document.querySelector('.stream-item[data-label="' + label + '"]')) {
-      errEl.textContent = 'Камера с таким label уже существует';
-      errEl.classList.remove('d-none'); return;
-    }
-    if (!url || !url.startsWith('rtsp://')) {
-      errEl.textContent = 'URL должен начинаться с rtsp://';
-      errEl.classList.remove('d-none'); return;
-    }
-    errEl.classList.add('d-none');
+    if (!showError(errEl, validateStream(label, url, null))) return;
 
     addStreamRow(label, url, null);
     document.getElementById('new-label').value = '';
@@ -355,19 +315,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var newUrl    = document.getElementById('edit-url').value.trim();
     var errEl     = document.getElementById('edit-cam-error');
 
-    if (!newLabel || !/^[a-zA-Z0-9_-]+$/.test(newLabel)) {
-      errEl.textContent = 'Label: только латиница, цифры, _ и -';
-      errEl.classList.remove('d-none'); return;
-    }
-    if (newLabel !== origLabel && document.querySelector('.stream-item[data-label="' + newLabel + '"]')) {
-      errEl.textContent = 'Камера с таким label уже существует';
-      errEl.classList.remove('d-none'); return;
-    }
-    if (!newUrl || !newUrl.startsWith('rtsp://')) {
-      errEl.textContent = 'URL должен начинаться с rtsp://';
-      errEl.classList.remove('d-none'); return;
-    }
-    errEl.classList.add('d-none');
+    if (!showError(errEl, validateStream(newLabel, newUrl, origLabel))) return;
 
     if (activeLabel === origLabel) polygonModal.hide();
 

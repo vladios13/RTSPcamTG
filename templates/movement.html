@@ -5,46 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="/static/fonts/manrope.css">
   <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/css/app.css">
   <title>RTSPcamTG — События</title>
   <style>
-    :root {
-      --accent:      #4361ee;
-      --accent-h:    #3451d1;
-      --bg:          #f4f6fb;
-      --card-bg:     #ffffff;
-      --card-shadow: 0 1px 8px rgba(0,0,0,.06);
-      --card-shadow-h: 0 4px 20px rgba(67,97,238,.12);
-      --card-radius: 12px;
-      --nav-h:       54px;
-      --border:      #e8ecf4;
-      --font:        'Manrope', sans-serif;
-    }
-
-    body { background: var(--bg); font-family: var(--font); }
-
-    /* ── Navbar ─────────────────────────────────────────── */
-    .app-nav {
-      background: #fff;
-      border-bottom: 1px solid var(--border);
-      height: var(--nav-h);
-      display: flex;
-      align-items: center;
-      padding: 0 1.25rem;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .app-brand {
-      font-weight: 700;
-      font-size: .95rem;
-      color: var(--accent);
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: .45rem;
-    }
-    .app-brand:hover { color: var(--accent-h); }
-
     /* ── Page wrap ──────────────────────────────────────── */
     .page-wrap { padding: 1.5rem 1.25rem; }
 
@@ -58,11 +21,11 @@
     .page-title {
       font-size: 1.15rem;
       font-weight: 700;
-      color: #1a1d2e;
+      color: var(--text);
       margin: 0;
       letter-spacing: -.3px;
     }
-    #status { font-size: .78rem; color: #9ca3af; margin-left: auto; }
+    #status { font-size: .78rem; color: var(--text-muted); margin-left: auto; }
 
     /* ── Filter buttons ─────────────────────────────────── */
     #cam-filter { display: flex; flex-wrap: wrap; gap: .35rem; }
@@ -97,20 +60,20 @@
       aspect-ratio: 16 / 9;
       object-fit: cover;
       display: block;
-      background: #0d0d14;
+      background: var(--frame-bg);
     }
     .alarm-info {
       padding: .4rem .65rem;
       font-size: .75rem;
-      color: #6b7280;
+      color: var(--text-mid);
       line-height: 1.4;
     }
-    .alarm-cam { font-weight: 700; color: #1a1d2e; }
+    .alarm-cam { font-weight: 700; color: var(--text); }
 
     /* ── Empty / load-more ──────────────────────────────── */
     #no-data-msg {
       display: none;
-      color: #9ca3af;
+      color: var(--text-muted);
       padding: 3rem;
       text-align: center;
       font-size: .9rem;
@@ -120,24 +83,10 @@
 </head>
 <body>
 
-<nav class="app-nav">
-  <a class="app-brand" href="/">
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M23 7l-7 5 7 5V7z"/>
-      <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-    </svg>
-    RTSPcamTG
-  </a>
-  <div class="ms-auto d-flex gap-2">
-    <a href="/" class="btn btn-sm" style="font-size:.8rem; color:#6b7280; border:1px solid var(--border);">← Главная</a>
-    <a href="/about" class="btn btn-sm btn-outline-secondary" style="font-size:.8rem; padding:.25rem .45rem;" title="О проекте">
-      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16">
-        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-        <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
-      </svg>
-    </a>
-  </div>
-</nav>
+{% set nav_actions %}
+  <a href="/" class="btn btn-sm nav-back">← Главная</a>
+{% endset %}
+{% include 'partials/navbar.html' %}
 
 <div class="page-wrap">
 
