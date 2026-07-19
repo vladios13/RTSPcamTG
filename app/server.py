@@ -92,36 +92,37 @@ async def favicon(request):
     return response.empty(status=204)
 
 
+def _jpeg_response(frame, extra_headers=None):
+    ok, jpg = cv2.imencode('.jpg', frame)
+    if not ok:
+        return response.html('No image', status=404)
+    headers = {'Cache-Control': 'no-store'}
+    if extra_headers:
+        headers.update(extra_headers)
+    return response.raw(jpg.tobytes(), content_type='image/jpeg', headers=headers)
+
+
 @app.route('/snapshot/<tag>')
 async def snapshot(request, tag):
     frame = state.framebuffer.get(tag)
-    if frame is not None:
-        frame = frame.copy()
-        for s in state.config['streams']:
-            if s['label'] == tag and s.get('detect_in_polygon'):
-                ctr = np.array(s['detect_in_polygon']).reshape((-1, 1, 2)).astype(np.int32)
-                cv2.drawContours(frame, [ctr], -1, (0, 255, 0), 3)
-
-        _, jpg = cv2.imencode('.jpg', frame)
-        return response.raw(jpg.tobytes(), content_type='image/jpeg', headers={'Cache-Control': 'no-store'})
-    else:
+    if frame is None:
         return response.html('No image', status=404)
+    frame = frame.copy()
+    for s in state.config['streams']:
+        if s['label'] == tag and s.get('detect_in_polygon'):
+            ctr = np.array(s['detect_in_polygon']).reshape((-1, 1, 2)).astype(np.int32)
+            cv2.drawContours(frame, [ctr], -1, (0, 255, 0), 3)
+    return _jpeg_response(frame)
 
 
 @app.route('/snapshot/raw/<tag>')
 async def snapshot_raw(request, tag):
     frame = state.framebuffer.get(tag)
-    if frame is not None:
-        frame = frame.copy()
-        h, w = frame.shape[:2]
-        _, jpg = cv2.imencode('.jpg', frame)
-        return response.raw(jpg.tobytes(), content_type='image/jpeg', headers={
-            'Cache-Control': 'no-store',
-            'X-Frame-Width': str(w),
-            'X-Frame-Height': str(h),
-        })
-    else:
+    if frame is None:
         return response.html('No image', status=404)
+    frame = frame.copy()
+    h, w = frame.shape[:2]
+    return _jpeg_response(frame, {'X-Frame-Width': str(w), 'X-Frame-Height': str(h)})
 
 
 @app.route('/stats')
