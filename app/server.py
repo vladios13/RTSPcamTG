@@ -69,7 +69,7 @@ async def configJson(request):
 @app.post('/config.save')
 async def configSave(request):
     bb = request.json
-    pprint.pprint(bb)
+    state.logger.info('config.save:\n%s', pprint.pformat(bb))
     state.config = bb
 
     state.stopStreams = True
@@ -94,8 +94,9 @@ async def favicon(request):
 
 @app.route('/snapshot/<tag>')
 async def snapshot(request, tag):
-    if tag in state.framebuffer:
-        frame = state.framebuffer[tag].copy()
+    frame = state.framebuffer.get(tag)
+    if frame is not None:
+        frame = frame.copy()
         for s in state.config['streams']:
             if s['label'] == tag and s.get('detect_in_polygon'):
                 ctr = np.array(s['detect_in_polygon']).reshape((-1, 1, 2)).astype(np.int32)
@@ -104,13 +105,14 @@ async def snapshot(request, tag):
         _, jpg = cv2.imencode('.jpg', frame)
         return response.raw(jpg, content_type='image/jpeg', headers={'Cache-Control': 'no-store'})
     else:
-        return response.html('No image')
+        return response.html('No image', status=404)
 
 
 @app.route('/snapshot/raw/<tag>')
 async def snapshot_raw(request, tag):
-    if tag in state.framebuffer:
-        frame = state.framebuffer[tag].copy()
+    frame = state.framebuffer.get(tag)
+    if frame is not None:
+        frame = frame.copy()
         h, w = frame.shape[:2]
         _, jpg = cv2.imencode('.jpg', frame)
         return response.raw(jpg, content_type='image/jpeg', headers={
