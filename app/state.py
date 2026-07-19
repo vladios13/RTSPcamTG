@@ -109,7 +109,7 @@ def add_framestat(name, stat):
 
 
 def get_size():
-    return total_size(framebuffer) / 1024
+    return total_size(framebuffer) / (1024 * 1024)
 
 
 def get_counter(name):

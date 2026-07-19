@@ -228,7 +228,7 @@
           <div class="col-6 col-md-3"><div class="stat-item" data-tip="Среднее время на пропущенный кадр (только сравнение, без детекции)"><div class="stat-label">Время · пропуск</div><div class="stat-value" id="s-skip-avg">{{ "%.3fs"|format(skip_avg) if skip_avg else "—" }}</div></div></div>
           <div class="col-6 col-md-3"><div class="stat-item"><div class="stat-label">Сбросов потока</div><div class="stat-value" id="s-resets">{{stream_resets}}</div></div></div>
           <div class="col-6 col-md-3"><div class="stat-item"><div class="stat-label">Ошибок подкл.</div><div class="stat-value" id="s-connect-failures">{{connect_failures}}</div></div></div>
-          <div class="col-6 col-md-3"><div class="stat-item" data-tip="Объём памяти под буфер последних кадров всех камер"><div class="stat-label">Буфер кадров</div><div class="stat-value" id="s-size">{{size}} MB</div></div></div>
+          <div class="col-6 col-md-3"><div class="stat-item" data-tip="Объём памяти под буфер последних кадров всех камер"><div class="stat-label">Буфер кадров</div><div class="stat-value" id="s-size">{{ "%.1f"|format(size) }} MB</div></div></div>
         </div>
       </div>
     </div>
@@ -279,7 +279,7 @@
         document.getElementById('s-skip-avg').textContent         = d.skip_avg   ? d.skip_avg.toFixed(3) + 's' : '—';
         document.getElementById('s-resets').textContent           = d.stream_resets;
         document.getElementById('s-connect-failures').textContent = d.connect_failures;
-        document.getElementById('s-size').textContent             = d.size + ' MB';
+        document.getElementById('s-size').textContent             = d.size.toFixed(1) + ' MB';
       })
       .catch(function() {});
   }
