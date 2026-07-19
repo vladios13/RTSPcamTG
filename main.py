@@ -27,18 +27,20 @@ if __name__ == '__main__':
 
     notifier.begin()
 
-    server.begin()  # блокирует; Sanic сам обрабатывает Ctrl+C (SIGINT)
+    try:
+        server.begin()  # блокирует; Sanic ловит SIGINT/SIGTERM и штатно выходит
+    finally:
+        # Graceful shutdown выполняется при ЛЮБОМ выходе из server.begin(),
+        # включая проброшенный KeyboardInterrupt (Ctrl+C).
+        state.logger.info('Shutting down...')
+        state.stopStreams = True
+        state.stopProcess = True
 
-    # --- Graceful shutdown после остановки Sanic ---
-    state.logger.info('Shutting down...')
-    state.stopStreams = True
-    state.stopProcess = True
+        notifier.stop()
 
-    notifier.stop()
+        for t in stream._stream_threads:
+            t.join(timeout=3)
+        _opencv_thread.join(timeout=5)
 
-    for t in stream._stream_threads:
-        t.join(timeout=3)
-    _opencv_thread.join(timeout=5)
-
-    state.logger.info('Shutdown complete')
-    state.logger.info('Main end')
+        state.logger.info('Shutdown complete')
+        state.logger.info('Main end')
