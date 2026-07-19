@@ -16,7 +16,7 @@ RTSP_OPEN_TIMEOUT_MS = 10000
 # discardcorrupt: drop partially-decoded frames (lost mid-frame slice) instead of returning them
 # half-smeared — read() gives ret=False for those, so the reconnect/skip logic handles them cleanly.
 os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = (
-    'rtsp_transport;tcp|timeout;%d|fflags;discardcorrupt' % (RTSP_TIMEOUT_MS * 1000)
+    f'rtsp_transport;tcp|timeout;{RTSP_TIMEOUT_MS * 1000}|fflags;discardcorrupt'
 )
 
 _stream_threads: list = []
@@ -40,7 +40,7 @@ def _reconnect_delay(attempt):
 
 
 def processStream(name, url):
-    state.logger.debug('processStream thread started: ' + name)
+    state.logger.debug(f'processStream thread started: {name}')
 
     if state.args.debug is None:
         err = 0
@@ -50,7 +50,7 @@ def processStream(name, url):
         try:
             while True:
                 if state.stopStreams:
-                    state.logger.debug('Exiting thread name: ' + name)
+                    state.logger.debug(f'Exiting thread name: {name}')
                     break
                 if not cap.isOpened():
                     cap.release()
@@ -96,7 +96,7 @@ def processStream(name, url):
                         time.sleep(0.5)
         finally:
             cap.release()
-            state.logger.debug('Released VideoCapture: ' + name)
+            state.logger.debug(f'Released VideoCapture: {name}')
 
     else:
         with open(state.args.debug, mode='rb') as file:
