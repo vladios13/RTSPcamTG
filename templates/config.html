@@ -156,16 +156,19 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
       </div>
       <div class="modal-body">
-        <p class="point-hint mb-2">
+        <p class="point-hint mb-2" id="zone-instruction">
           Кликайте по изображению чтобы поставить точки зоны. Ровно <strong>4 точки</strong>.
         </p>
         <div id="canvas-wrap">
           <canvas id="polygon-canvas"></canvas>
         </div>
-        <div class="mt-2 d-flex justify-content-between align-items-center">
+        <div class="mt-2 d-flex justify-content-between align-items-center" id="zone-controls">
           <span class="point-hint" id="point-count">Точек: 0 / 4</span>
           <button type="button" class="btn btn-sm btn-outline-danger" id="btn-clear-zone">Очистить</button>
         </div>
+        <p class="point-hint text-danger mb-0 d-none" id="zone-no-frame">
+          Нет кадра с камеры — зону детекции сейчас настроить нельзя.
+        </p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
@@ -374,6 +377,17 @@ document.addEventListener('DOMContentLoaded', function() {
   var frameW = 1, frameH = 1;
   var canvasImg         = new Image();
   var pendingExistingPts = [];
+  var canvasReady       = false;
+
+  // Показать редактор только когда есть живой кадр; иначе — сообщение
+  function setZoneAvailable(ok) {
+    canvasReady = ok;
+    document.getElementById('zone-instruction').classList.toggle('d-none', !ok);
+    document.getElementById('canvas-wrap').classList.toggle('d-none', !ok);
+    document.getElementById('zone-controls').classList.toggle('d-none', !ok);
+    document.getElementById('zone-no-frame').classList.toggle('d-none', ok);
+    if (!ok) document.getElementById('btn-save-zone').disabled = true;
+  }
 
   function openPolygonEditor(label) {
     activeLabel = label;
@@ -412,9 +426,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (canvasImg.complete && canvasImg.naturalWidth > 0) {
-      renderCanvas();
+      setZoneAvailable(true); renderCanvas();
+    } else if (canvasImg.complete) {          // уже broken (напр. закэшенный 404)
+      setZoneAvailable(false);
     } else {
-      canvasImg.onload = renderCanvas;
+      canvasImg.onload  = function() { setZoneAvailable(true); renderCanvas(); };
+      canvasImg.onerror = function() { setZoneAvailable(false); };
     }
   });
 
@@ -543,6 +560,7 @@ document.addEventListener('DOMContentLoaded', function() {
   canvas.addEventListener('mouseleave', function() { dragPointIdx = -1; dragAll = false; dragStart = null; pointsSnap = null; });
 
   canvas.addEventListener('click', function(e) {
+    if (!canvasReady) return;
     if (points.length >= 4) return;
     if (dragPointIdx !== -1 || dragAll) return;
     var pos = getCanvasPos(e);
