@@ -1,5 +1,7 @@
+numpy<2  # opencv-python 4.9.0.80 собран под NumPy 1.x; NumPy 2.x ломает ABI (import cv2 падает)
 opencv-python==4.9.0.80
 jinja2
-sanic==19.12.5
+sanic==24.12.0
+tracerite<2  # sanic 24.12 использует tracerite.html.style, удалённый в tracerite 2.x
 shapely
 aiogram==3.7.0

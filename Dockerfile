@@ -1,5 +1,5 @@
-# Используем официальный образ Python 3.8 на базе slim-дистрибутива
-FROM python:3.8-slim
+# Используем официальный образ Python 3.11 на базе slim-дистрибутива
+FROM python:3.11-slim
 
 WORKDIR /app
 

@@ -1,6 +1,5 @@
 import os
 import platform
-import signal
 import threading
 
 from app import state
@@ -10,12 +9,6 @@ from app import notifier
 from app import server
 
 
-def _sigterm_handler(signum, frame):
-    """SIGTERM (docker stop, systemd) — останавливаем Sanic для graceful shutdown."""
-    state.logger.info('SIGTERM received, stopping web server...')
-    server.app.stop()
-
-
 if __name__ == '__main__':
     state.logger.info('RTSPcamTG startup')
 
@@ -23,8 +16,8 @@ if __name__ == '__main__':
         nice = os.nice(5)
         state.logger.info('nice level: {}'.format(nice))
 
-    signal.signal(signal.SIGTERM, _sigterm_handler)
-
+    # Сигналы SIGINT/SIGTERM ловит сам Sanic (register_sys_signals=True по умолчанию):
+    # при сигнале app.run() штатно завершается, дальше отрабатывает cleanup ниже.
     stream.loadStreams()
 
     detector.init_model()

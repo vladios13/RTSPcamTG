@@ -28,8 +28,8 @@ def template(tpl, **kwargs):
 
 app = Sanic('RTSPcamTG')
 
-app.static('/static', './static')
-app.static('/alarm-files', './alarm')
+app.static('/static', './static', name='static')
+app.static('/alarm-files', './alarm', name='alarm_files')
 
 
 @app.route('/')
@@ -103,7 +103,7 @@ async def snapshot(request, tag):
                 cv2.drawContours(frame, [ctr], -1, (0, 255, 0), 3)
 
         _, jpg = cv2.imencode('.jpg', frame)
-        return response.raw(jpg, content_type='image/jpeg', headers={'Cache-Control': 'no-store'})
+        return response.raw(jpg.tobytes(), content_type='image/jpeg', headers={'Cache-Control': 'no-store'})
     else:
         return response.html('No image', status=404)
 
@@ -115,7 +115,7 @@ async def snapshot_raw(request, tag):
         frame = frame.copy()
         h, w = frame.shape[:2]
         _, jpg = cv2.imencode('.jpg', frame)
-        return response.raw(jpg, content_type='image/jpeg', headers={
+        return response.raw(jpg.tobytes(), content_type='image/jpeg', headers={
             'Cache-Control': 'no-store',
             'X-Frame-Width': str(w),
             'X-Frame-Height': str(h),
@@ -220,4 +220,6 @@ async def api_alarms(request):
 
 
 def begin():
-    app.run(host='0.0.0.0', port=8000)
+    # single_process=True — сервер остаётся в текущем процессе (без worker-manager fork
+    # Sanic ≥ 22.9), иначе хендлеры не видят framebuffer/stats из потоков детектора.
+    app.run(host='0.0.0.0', port=8000, single_process=True)
