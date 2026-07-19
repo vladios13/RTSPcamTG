@@ -4,9 +4,9 @@ from pathlib import Path
 import numpy as np
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from sanic import Sanic, response
-from sanic.response import json, html
+from sanic.response import html
 import cv2
-import json as json_lib
+import json
 from threading import Timer
 
 from app import notifier
@@ -34,7 +34,7 @@ app.static('/alarm-files', './alarm', name='alarm_files')
 
 @app.route('/')
 async def mainList(request):
-    filtered = {k: v for k, v in state.framebuffer.items() if '_' not in k}
+    filtered = {k: v for k, v in state.framebuffer.items() if not k.endswith(('_processed', '_framed'))}
     return template(
         'index.html',
         images=filtered,
@@ -69,6 +69,8 @@ async def configJson(request):
 @app.post('/config.save')
 async def configSave(request):
     bb = request.json
+    if not isinstance(bb, dict) or 'streams' not in bb:
+        return response.json({'error': 'invalid config'}, status=400)
     state.logger.info('config.save:\n%s', pprint.pformat(bb))
     state.config = bb
 
@@ -82,7 +84,7 @@ async def configSave(request):
     notifier.begin()
 
     with open('config.json', 'w') as file:
-        file.write(json_lib.dumps(state.config, indent=2, ensure_ascii=False))
+        file.write(json.dumps(state.config, indent=2, ensure_ascii=False))
 
     return response.json(bb)
 
@@ -143,7 +145,7 @@ async def api_stats(request):
         'stream_resets': state.get_counter('stream_resets'),
         'connect_failures': state.get_counter('stream_connect_failures'),
         'size': state.get_size(),
-        'streams': list({k: None for k in state.framebuffer if '_' not in k}.keys()),
+        'streams': [k for k in state.framebuffer if not k.endswith(('_processed', '_framed'))],
     })
 
 
