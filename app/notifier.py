@@ -14,6 +14,7 @@ _dp: Optional[Dispatcher] = None
 _loop: Optional[asyncio.AbstractEventLoop] = None
 _tg_thread: Optional[threading.Thread] = None
 _queue: Optional[asyncio.Queue] = None
+_sender_task: Optional[asyncio.Task] = None
 
 
 def initBot():
@@ -56,17 +57,22 @@ async def _sender_worker():
 
 
 def _run_bot_loop():
-    global _loop, _queue
+    global _loop, _queue, _sender_task
     _loop = asyncio.new_event_loop()
     asyncio.set_event_loop(_loop)
     _queue = asyncio.Queue(maxsize=50)
-    asyncio.ensure_future(_sender_worker(), loop=_loop)
+    _sender_task = _loop.create_task(_sender_worker())
     state.logger.info('Aiogram event loop created, starting polling...')
     try:
         _loop.run_until_complete(_dp.start_polling(_bot, handle_signals=False))
     except Exception as e:
         state.logger.error('Aiogram polling crashed: %s', e, exc_info=True)
     finally:
+        _sender_task.cancel()
+        try:
+            _loop.run_until_complete(_sender_task)
+        except (asyncio.CancelledError, Exception):
+            pass
         try:
             _loop.run_until_complete(_bot.session.close())
         except Exception:
