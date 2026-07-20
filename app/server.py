@@ -4,9 +4,9 @@ from pathlib import Path
 import numpy as np
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from sanic import Sanic, response
-from sanic.response import json, html
+from sanic.response import html
 import cv2
-import json as json_lib
+import json
 from threading import Timer
 
 from app import notifier
@@ -28,13 +28,13 @@ def template(tpl, **kwargs):
 
 app = Sanic('RTSPcamTG')
 
-app.static('/static', './static')
-app.static('/alarm-files', './alarm')
+app.static('/static', './static', name='static')
+app.static('/alarm-files', './alarm', name='alarm_files')
 
 
 @app.route('/')
 async def mainList(request):
-    filtered = {k: v for k, v in state.framebuffer.items() if '_' not in k}
+    filtered = {k: v for k, v in state.framebuffer.items() if not k.endswith(('_processed', '_framed'))}
     return template(
         'index.html',
         images=filtered,
@@ -69,6 +69,8 @@ async def configJson(request):
 @app.post('/config.save')
 async def configSave(request):
     bb = request.json
+    if not isinstance(bb, dict) or 'streams' not in bb:
+        return response.json({'error': 'invalid config'}, status=400)
     state.logger.info('config.save:\n%s', pprint.pformat(bb))
     state.config = bb
 
@@ -82,7 +84,7 @@ async def configSave(request):
     notifier.begin()
 
     with open('config.json', 'w') as file:
-        file.write(json_lib.dumps(state.config, indent=2, ensure_ascii=False))
+        file.write(json.dumps(state.config, indent=2, ensure_ascii=False))
 
     return response.json(bb)
 
@@ -92,36 +94,37 @@ async def favicon(request):
     return response.empty(status=204)
 
 
+def _jpeg_response(frame, extra_headers=None):
+    ok, jpg = cv2.imencode('.jpg', frame)
+    if not ok:
+        return response.html('No image', status=404)
+    headers = {'Cache-Control': 'no-store'}
+    if extra_headers:
+        headers.update(extra_headers)
+    return response.raw(jpg.tobytes(), content_type='image/jpeg', headers=headers)
+
+
 @app.route('/snapshot/<tag>')
 async def snapshot(request, tag):
     frame = state.framebuffer.get(tag)
-    if frame is not None:
-        frame = frame.copy()
-        for s in state.config['streams']:
-            if s['label'] == tag and s.get('detect_in_polygon'):
-                ctr = np.array(s['detect_in_polygon']).reshape((-1, 1, 2)).astype(np.int32)
-                cv2.drawContours(frame, [ctr], -1, (0, 255, 0), 3)
-
-        _, jpg = cv2.imencode('.jpg', frame)
-        return response.raw(jpg, content_type='image/jpeg', headers={'Cache-Control': 'no-store'})
-    else:
+    if frame is None:
         return response.html('No image', status=404)
+    frame = frame.copy()
+    for s in state.config['streams']:
+        if s['label'] == tag and s.get('detect_in_polygon'):
+            ctr = np.array(s['detect_in_polygon']).reshape((-1, 1, 2)).astype(np.int32)
+            cv2.drawContours(frame, [ctr], -1, (0, 255, 0), 3)
+    return _jpeg_response(frame)
 
 
 @app.route('/snapshot/raw/<tag>')
 async def snapshot_raw(request, tag):
     frame = state.framebuffer.get(tag)
-    if frame is not None:
-        frame = frame.copy()
-        h, w = frame.shape[:2]
-        _, jpg = cv2.imencode('.jpg', frame)
-        return response.raw(jpg, content_type='image/jpeg', headers={
-            'Cache-Control': 'no-store',
-            'X-Frame-Width': str(w),
-            'X-Frame-Height': str(h),
-        })
-    else:
+    if frame is None:
         return response.html('No image', status=404)
+    frame = frame.copy()
+    h, w = frame.shape[:2]
+    return _jpeg_response(frame, {'X-Frame-Width': str(w), 'X-Frame-Height': str(h)})
 
 
 @app.route('/stats')
@@ -142,7 +145,7 @@ async def api_stats(request):
         'stream_resets': state.get_counter('stream_resets'),
         'connect_failures': state.get_counter('stream_connect_failures'),
         'size': state.get_size(),
-        'streams': list({k: None for k in state.framebuffer if '_' not in k}.keys()),
+        'streams': [k for k in state.framebuffer if not k.endswith(('_processed', '_framed'))],
     })
 
 
@@ -220,4 +223,6 @@ async def api_alarms(request):
 
 
 def begin():
-    app.run(host='0.0.0.0', port=8000)
+    # single_process=True — сервер остаётся в текущем процессе (без worker-manager fork
+    # Sanic ≥ 22.9), иначе хендлеры не видят framebuffer/stats из потоков детектора.
+    app.run(host='0.0.0.0', port=8000, single_process=True)

@@ -236,8 +236,7 @@ def detect(stream):
         polygon = Polygon(stream['detect_in_polygon'])
 
     orgImage = frame
-    for i in indices:
-        idx = i[0] if hasattr(i, '__len__') else i
+    for idx in indices:
         box = boxes[idx]
         x = box[0]
         y = box[1]
@@ -255,7 +254,7 @@ def detect(stream):
             if in_zone:
                 # Объект внутри зоны — алерт
                 cv2.circle(image, point_loc, 5, (0, 0, 255), -1)
-                alarm.append('{}: {:.2%}'.format(alarm_object_name, confidences[idx]))
+                alarm.append(f'{alarm_object_name}: {confidences[idx]:.2%}')
                 save_bounded_image(orgImage, class_ids[idx], confidences[idx], round(x), round(y), round(x + w), round(y + h))
             else:
                 # Объект вне зоны — рисуем зелёный кружок, не уведомляем

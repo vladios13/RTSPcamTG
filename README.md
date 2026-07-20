@@ -2,7 +2,7 @@
 
 Мониторинг IP-камер по RTSP с детекцией объектов (YOLOv8) и отправкой уведомлений в Telegram. Без облачных зависимостей.
 
-![Python](https://img.shields.io/badge/Python-3.8-3776AB?logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
 ![OpenCV](https://img.shields.io/badge/OpenCV-4.9-5C3EE8?logo=opencv&logoColor=white)
 ![YOLOv8](https://img.shields.io/badge/YOLOv8-ONNX-00FFFF?logo=onnx&logoColor=black)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
@@ -93,11 +93,11 @@ python scripts/export_yolov8.py   # → cfg/yolov8n.onnx
 
 ## Зависимости
 
-- Python 3.8
+- Python 3.11
 - OpenCV 4.9.0
 - YOLOv8n (ONNX, ~13 МБ, в комплекте, скачивать отдельно не нужно)
 - aiogram 3.7.0
-- Sanic 19.12.5
+- Sanic 24.12.0
 - Shapely, Jinja2
 - Docker / docker-compose (лимит CPU контейнера: 0.4)
 
