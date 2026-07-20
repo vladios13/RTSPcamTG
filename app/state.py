@@ -1,15 +1,8 @@
-from __future__ import print_function
-
 import os
 import time
-from sys import getsizeof, stderr
+from sys import getsizeof
 from itertools import chain
 from collections import deque
-
-try:
-    from reprlib import repr
-except ImportError:
-    pass
 
 import argparse
 import json
@@ -17,7 +10,7 @@ import logging
 import sys
 
 
-def total_size(o, handlers={}, verbose=False):
+def total_size(o, handlers={}):
     """Returns the approximate memory footprint of an object and all of its contents."""
     dict_handler = lambda d: chain.from_iterable(d.items())
     all_handlers = {
@@ -37,8 +30,6 @@ def total_size(o, handlers={}, verbose=False):
             return 0
         seen.add(id(o))
         s = getsizeof(o, default_size)
-        if verbose:
-            print(s, type(o), repr(o), file=stderr)
         for typ, handler in all_handlers.items():
             if isinstance(o, typ):
                 s += sum(map(sizeof, handler(o)))
