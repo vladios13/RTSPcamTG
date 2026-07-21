@@ -4,6 +4,7 @@ from shapely.geometry.polygon import Polygon
 import os
 import os.path
 import datetime
+import html
 import numpy as np
 import time
 import argparse
@@ -138,7 +139,7 @@ def perform_alarm(name, image, alarm):
     object_lines = '\n'.join('  ' + line for line in alarm)
 
     caption = (
-        f'<b>[ALARM]</b>  <b>{name}</b>\n'
+        f'<b>[ALARM]</b>  <b>{html.escape(name)}</b>\n'
         f'<i>{timestamp_str}</i>\n'
         f'\n'
         f'Detected ({len(alarm)}):\n'

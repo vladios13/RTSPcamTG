@@ -42,7 +42,6 @@ def total_size(o, handlers={}):
 framebuffer = {}
 stats = {}
 frame_stats = {}
-last_frame_ts = {}      # {camera: time.time()} последнего успешно прочитанного кадра
 start_time = time.time()
 
 stopStreams = False

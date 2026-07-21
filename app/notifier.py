@@ -11,8 +11,6 @@ from aiogram.types import Message, FSInputFile
 from app import state
 from app.utils import zero_division
 
-STALE_FRAME_S = 30  # кадр старше — камера помечается в /status как проблемная
-
 _bot: Optional[Bot] = None
 _dp: Optional[Dispatcher] = None
 _loop: Optional[asyncio.AbstractEventLoop] = None
@@ -31,20 +29,10 @@ def _fmt_duration(seconds):
 
 
 def _status_text():
-    """Текст ответа на /status: аптайм, счётчики, свежесть кадров по камерам."""
+    """Текст ответа на /status: аптайм, режим детекции, счётчики."""
     now = time.time()
     processed = state.get_counter('images_processed')
     avg = zero_division(state.get_counter('images_time'), processed)
-
-    cameras = []
-    for s in state.config.get('streams', []):
-        ts = state.last_frame_ts.get(s['label'])
-        if ts is None:
-            cameras.append(f"  {s['label']} — нет кадров (!)")
-            continue
-        age = now - ts
-        mark = ' (!)' if age > STALE_FRAME_S else ''
-        cameras.append(f"  {s['label']} — кадр {int(age)} сек назад{mark}")
 
     detection = 'на паузе — /ustart для возобновления' if state.stopDetection else 'включена'
 
@@ -58,9 +46,6 @@ def _status_text():
         f"Пропущено: {state.get_counter('images_skipped')}",
         f"Реконнекты: {state.get_counter('stream_resets')} / "
         f"неудачных подключений: {state.get_counter('stream_connect_failures')}",
-        '',
-        'Камеры:',
-        *(cameras or ['  нет настроенных камер']),
     ])
 
 
