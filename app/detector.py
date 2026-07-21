@@ -132,6 +132,7 @@ def perform_alarm(name, image, alarm):
 
     cv2.imwrite(path, image)
     state.logger.warning('[ALARM] cam=%s objects=%d path=%s', name, len(alarm), path)
+    state.increase_counter('alarms')
 
     timestamp_str = now.strftime('%Y-%m-%d %H:%M:%S')
     object_lines = '\n'.join('  ' + line for line in alarm)

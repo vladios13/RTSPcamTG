@@ -76,6 +76,7 @@ def processStream(name, url):
                     reconnect_attempt = 0
                     ever_connected = True
                     state.framebuffer[name] = frame
+                    state.last_frame_ts[name] = time.time()
                 else:
                     err += 1
                     # A read that blocked ~the full timeout is a real stall: the interrupt
