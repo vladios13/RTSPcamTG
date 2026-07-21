@@ -69,7 +69,7 @@ else:
 
 logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(getattr(logging, str(config.get('log_level', 'INFO')).upper(), logging.INFO))
 
 fileHandler = logging.FileHandler('ultracam.log')
 fileHandler.setFormatter(logFormatter)
