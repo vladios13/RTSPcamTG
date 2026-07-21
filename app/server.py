@@ -127,11 +127,6 @@ async def snapshot_raw(request, tag):
     return _jpeg_response(frame, {'X-Frame-Width': str(w), 'X-Frame-Height': str(h)})
 
 
-@app.route('/stats')
-async def stats(request):
-    return response.html(pprint.pformat(state.frame_stats))
-
-
 @app.route('/api/stats')
 async def api_stats(request):
     return response.json({
