@@ -56,8 +56,9 @@
     .stat-item[data-tip]::after {
       content: attr(data-tip);
       position: absolute;
-      bottom: 100%; left: 50%; transform: translateX(-50%);
-      margin-bottom: .4rem;
+      /* вниз, а не вверх: над первым рядом плиток только шапка карточки — тултип наезжал на её заголовок */
+      top: 100%; left: 50%; transform: translateX(-50%);
+      margin-top: .4rem;
       width: max-content; max-width: min(220px, 44vw);
       padding: .4rem .6rem;
       background: rgba(75, 85, 99, .82);
@@ -142,6 +143,7 @@
     <div class="collapse" id="sysStats">
       <div class="stats-body">
         <div class="row g-1" id="stats-grid">
+          <div class="col-6 col-md-3"><div class="stat-item" data-tip="Число тревог с момента запуска (обнуляется при перезапуске)"><div class="stat-label">Тревог</div><div class="stat-value" id="s-alarms">{{alarms}}</div></div></div>
           <div class="col-6 col-md-3"><div class="stat-item"><div class="stat-label">Обработано</div><div class="stat-value" id="s-processed">{{processed}}</div></div></div>
           <div class="col-6 col-md-3"><div class="stat-item"><div class="stat-label">Пропущено</div><div class="stat-value" id="s-skipped">{{skipped}}</div></div></div>
           <div class="col-6 col-md-3"><div class="stat-item" data-tip="Средняя доля изменения кадра среди обработанных (прошли порог — запущена детекция)"><div class="stat-label">Δ кадра · обработка</div><div class="stat-value" id="s-diff2">{{ "%.5f"|format(diff_avg2) if diff_avg2 else "—" }}</div></div></div>
@@ -193,6 +195,7 @@
     fetch('/api/stats')
       .then(function(r) { return r.json(); })
       .then(function(d) {
+        document.getElementById('s-alarms').textContent           = d.alarms;
         document.getElementById('s-processed').textContent        = d.processed;
         document.getElementById('s-skipped').textContent          = d.skipped;
         document.getElementById('s-diff2').textContent            = d.diff_avg2  ? d.diff_avg2.toFixed(5)      : '—';

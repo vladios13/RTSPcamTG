@@ -38,6 +38,7 @@ async def mainList(request):
     return template(
         'index.html',
         images=filtered,
+        alarms=state.get_counter('alarms'),
         processed=state.get_counter('images_processed'),
         skipped=state.get_counter('images_skipped'),
         avg=zero_division(state.get_counter('images_time'), state.get_counter('images_processed')),
@@ -130,6 +131,7 @@ async def snapshot_raw(request, tag):
 @app.route('/api/stats')
 async def api_stats(request):
     return response.json({
+        'alarms': state.get_counter('alarms'),
         'processed': state.get_counter('images_processed'),
         'skipped': state.get_counter('images_skipped'),
         'avg': zero_division(state.get_counter('images_time'), state.get_counter('images_processed')),
