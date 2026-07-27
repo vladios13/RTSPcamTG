@@ -49,14 +49,46 @@ def _status_text():
     ])
 
 
+_ADMIN_STATUSES = {'creator', 'administrator'}
+
+
+async def _is_allowed(message: Message) -> bool:
+    """Доступ к командам: tg_admins, владелец в ЛС, админы супергруппы tg_chat. Иначе — отказ."""
+    user = message.from_user
+    if user is None:  # посты канала
+        return False
+
+    tg_chat = state.config.get('tg_chat')
+    if user.id in (state.config.get('tg_admins') or []):
+        return True
+
+    if tg_chat and message.chat.id == tg_chat:
+        if message.chat.type == 'private':
+            return True
+        try:
+            member = await _bot.get_chat_member(tg_chat, user.id)
+        except Exception as e:
+            state.logger.warning('get_chat_member(%s, %s) failed: %s', tg_chat, user.id, e)
+        else:
+            if member.status in _ADMIN_STATUSES:
+                return True
+
+    log = state.logger.warning if (message.text or '').startswith('/') else state.logger.debug
+    log('Отклонено сообщение от user_id=%s в chat_id=%s: %r', user.id, message.chat.id, message.text)
+    return False
+
+
 def initBot():
     global _bot, _dp
     if 'tg_token' not in state.config:
         state.logger.warning('notifier: tg_token not found in config, bot disabled')
         return
+    if not state.config.get('tg_chat') and not state.config.get('tg_admins'):
+        state.logger.warning('notifier: нет tg_chat и tg_admins — команды бота недоступны никому')
     _bot = Bot(token=state.config['tg_token'])
     _dp = Dispatcher()
     router = Router()
+    router.message.filter(_is_allowed)
     _dp.include_router(router)
 
     @router.message(Command('ustop'))
