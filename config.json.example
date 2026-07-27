@@ -4,6 +4,7 @@
   "tg_admins": [123456789],
   "stream_startup_delay_s": 2,
   "log_level": "INFO",
+  "lang": "ru",
 
   "streams": [
     {

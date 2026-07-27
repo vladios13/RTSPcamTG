@@ -48,6 +48,7 @@ docker compose build && docker compose up -d
   "tg_admins": [123456789],
   "stream_startup_delay_s": 2,
   "log_level": "INFO",
+  "lang": "ru",
   "streams": [
     {
       "label": "front_door",
@@ -62,6 +63,8 @@ docker compose build && docker compose up -d
 `detect_in_polygon` — список точек (x, y). Редактор полигонов доступен в Web UI (`/config`).
 
 `tg_admins` — список Telegram user ID, которым разрешены команды бота (`/status`, `/ustop`, `/ustart`). Помимо них команды доступны владельцу в личке с ботом (`tg_chat` = ID пользователя) и администраторам супергруппы, если `tg_chat` — её ID. Если не задано ни `tg_chat`, ни `tg_admins` — команды не работают ни у кого. Чужие сообщения игнорируются молча, отказ пишется в лог.
+
+`lang` — язык Web UI, по умолчанию `ru`. Переключается в `/config` («Интерфейс» → «Язык») и применяется сразу после сохранения.
 
 `log_level` — `DEBUG` / `INFO` / `WARNING` / `ERROR`, по умолчанию `INFO`. Применяется после рестарта; неизвестное значение молча откатывается на `INFO`.
 
