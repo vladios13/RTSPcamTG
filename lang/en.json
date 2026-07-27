@@ -64,5 +64,22 @@
   "about.feature_telegram": "Telegram alerts with a photo and the camera name",
   "about.feature_local": "No cloud dependencies, local and dockerized",
   "about.source": "Source code on GitHub",
-  "about.fork": "Forked from"
+  "about.fork": "Forked from",
+  "bot.detection_stopped": "Detection stopped",
+  "bot.detection_resumed": "Detection resumed",
+  "bot.uptime": "Uptime",
+  "bot.detection": "Detection",
+  "bot.detection_on": "on",
+  "bot.detection_paused": "paused — /ustart to resume",
+  "bot.alarms": "Alarms since startup",
+  "bot.processed": "Frames processed",
+  "bot.avg": "avg",
+  "bot.skipped": "Skipped",
+  "bot.reconnects": "Reconnects",
+  "bot.connect_failures": "failed connections",
+  "bot.detected": "Detected",
+  "bot.unit_d": "d",
+  "bot.unit_h": "h",
+  "bot.unit_m": "m",
+  "bot.unit_s": "s"
 }

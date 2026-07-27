@@ -64,5 +64,22 @@
   "about.feature_telegram": "Уведомления в Telegram с фото и именем камеры",
   "about.feature_local": "Без облачных зависимостей, локально и в Docker",
   "about.source": "Исходный код на GitHub",
-  "about.fork": "Форк от"
+  "about.fork": "Форк от",
+  "bot.detection_stopped": "Детекция остановлена",
+  "bot.detection_resumed": "Детекция возобновлена",
+  "bot.uptime": "Аптайм",
+  "bot.detection": "Детекция",
+  "bot.detection_on": "включена",
+  "bot.detection_paused": "на паузе — /ustart для возобновления",
+  "bot.alarms": "Тревог с запуска",
+  "bot.processed": "Обработано кадров",
+  "bot.avg": "среднее",
+  "bot.skipped": "Пропущено",
+  "bot.reconnects": "Реконнекты",
+  "bot.connect_failures": "неудачных подключений",
+  "bot.detected": "Обнаружено",
+  "bot.unit_d": "д",
+  "bot.unit_h": "ч",
+  "bot.unit_m": "м",
+  "bot.unit_s": "с"
 }
