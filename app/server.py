@@ -12,6 +12,7 @@ from threading import Timer
 from app import notifier
 from app import stream
 from app import state
+from app.i18n import t
 from app.utils import zero_division
 
 
@@ -19,6 +20,7 @@ env = Environment(
     loader=FileSystemLoader('templates'),
     autoescape=select_autoescape(['html', 'xml', 'tpl', 'j2'])
 )
+env.globals['t'] = t
 
 
 def template(tpl, **kwargs):
