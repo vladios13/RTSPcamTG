@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="{{ t('lang.code') }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -48,7 +48,7 @@
 <body>
 
 {% set nav_actions %}
-  <a href="/" class="btn btn-sm nav-back">← Назад</a>
+  <a href="/" class="btn btn-sm nav-back">{{ t('nav.back') }}</a>
 {% endset %}
 {% include 'partials/navbar.html' %}
 

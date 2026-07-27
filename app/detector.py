@@ -10,6 +10,7 @@ import time
 import argparse
 
 from app import state
+from app.i18n import t
 from app import notifier
 
 classes = None
@@ -142,7 +143,7 @@ def perform_alarm(name, image, alarm):
         f'<b>[ALARM]</b>  <b>{html.escape(name)}</b>\n'
         f'<i>{timestamp_str}</i>\n'
         f'\n'
-        f'Detected ({len(alarm)}):\n'
+        f"{t('bot.detected')} ({len(alarm)}):\n"
         f'{object_lines}'
     )
 

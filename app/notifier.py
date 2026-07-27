@@ -9,6 +9,7 @@ from aiogram.filters import Command
 from aiogram.types import Message, FSInputFile
 
 from app import state
+from app.i18n import t
 from app.utils import zero_division
 
 _bot: Optional[Bot] = None
@@ -24,8 +25,10 @@ def _fmt_duration(seconds):
     h, m = divmod(m, 60)
     d, h = divmod(h, 24)
     if d:
-        return f'{d}д {h}ч {m}м'
-    return f'{h}ч {m}м' if h else f'{m}м {s}с'
+        return f"{d}{t('bot.unit_d')} {h}{t('bot.unit_h')} {m}{t('bot.unit_m')}"
+    if h:
+        return f"{h}{t('bot.unit_h')} {m}{t('bot.unit_m')}"
+    return f"{m}{t('bot.unit_m')} {s}{t('bot.unit_s')}"
 
 
 def _status_text():
@@ -34,18 +37,18 @@ def _status_text():
     processed = state.get_counter('images_processed')
     avg = zero_division(state.get_counter('images_time'), processed)
 
-    detection = 'на паузе — /ustart для возобновления' if state.stopDetection else 'включена'
+    detection = t('bot.detection_paused') if state.stopDetection else t('bot.detection_on')
 
     return '\n'.join([
         '<b>RTSPcamTG</b>',
-        f'Аптайм: {_fmt_duration(now - state.start_time)}',
-        f'Детекция: {detection}',
+        f"{t('bot.uptime')}: {_fmt_duration(now - state.start_time)}",
+        f"{t('bot.detection')}: {detection}",
         '',
-        f"Тревог с запуска: {state.get_counter('alarms')}",
-        f'Обработано кадров: {processed} (среднее {avg:.2f} с)',
-        f"Пропущено: {state.get_counter('images_skipped')}",
-        f"Реконнекты: {state.get_counter('stream_resets')} / "
-        f"неудачных подключений: {state.get_counter('stream_connect_failures')}",
+        f"{t('bot.alarms')}: {state.get_counter('alarms')}",
+        f"{t('bot.processed')}: {processed} ({t('bot.avg')} {avg:.2f} {t('bot.unit_s')})",
+        f"{t('bot.skipped')}: {state.get_counter('images_skipped')}",
+        f"{t('bot.reconnects')}: {state.get_counter('stream_resets')} / "
+        f"{t('bot.connect_failures')}: {state.get_counter('stream_connect_failures')}",
     ])
 
 
@@ -95,13 +98,13 @@ def initBot():
     async def cmd_ustop(message: Message):
         state.stopDetection = True
         state.logger.info('Detection stopped via Telegram /ustop')
-        await message.answer("Stopping detection")
+        await message.answer(t('bot.detection_stopped'))
 
     @router.message(Command('ustart'))
     async def cmd_ustart(message: Message):
         state.stopDetection = False
         state.logger.info('Detection resumed via Telegram /ustart')
-        await message.answer("Continue detection")
+        await message.answer(t('bot.detection_resumed'))
 
     @router.message(Command('status'))
     async def cmd_status(message: Message):

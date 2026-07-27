@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="ru">
+<html lang="{{ t('lang.code') }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="/static/fonts/manrope.css">
   <link rel="stylesheet" href="/static/css/bootstrap.min.css">
   <link rel="stylesheet" href="/static/css/app.css">
-  <title>RTSPcamTG — События</title>
+  <title>{{ t('movement.page_title') }}</title>
   <style>
     /* ── Page wrap ──────────────────────────────────────── */
     .page-wrap { padding: 1.5rem 1.25rem; }
@@ -84,24 +84,24 @@
 <body>
 
 {% set nav_actions %}
-  <a href="/" class="btn btn-sm nav-back">← Главная</a>
+  <a href="/" class="btn btn-sm nav-back">{{ t('nav.home') }}</a>
 {% endset %}
 {% include 'partials/navbar.html' %}
 
 <div class="page-wrap">
 
   <div class="page-header">
-    <h1 class="page-title">События</h1>
+    <h1 class="page-title">{{ t('movement.title') }}</h1>
     <div id="cam-filter"></div>
-    <span id="status">загрузка…</span>
+    <span id="status">{{ t('movement.loading') }}</span>
   </div>
 
   <div class="row g-3" id="alarm-grid"></div>
-  <div id="no-data-msg">Событий пока нет.</div>
+  <div id="no-data-msg">{{ t('movement.empty') }}</div>
 
   <div class="text-center mt-2 mb-5">
     <button class="btn btn-outline-secondary btn-sm" id="load-more" style="font-size:.8rem; padding:.35rem 1.25rem;">
-      Загрузить ещё
+      {{ t('movement.load_more') }}
     </button>
   </div>
 
@@ -138,7 +138,7 @@
   function renderFilterButtons() {
     var container = document.getElementById('cam-filter');
     container.innerHTML = '';
-    [{ id: 'all', label: 'Все' }].concat(allCams.map(function(c) { return { id: c, label: c }; }))
+    [{ id: 'all', label: {{ t('movement.all')|tojson }} }].concat(allCams.map(function(c) { return { id: c, label: c }; }))
       .forEach(function(entry) {
         var btn = document.createElement('button');
         btn.className = 'btn btn-outline-secondary' + (currentCam === entry.id ? ' active' : '');
@@ -177,8 +177,8 @@
         document.getElementById('no-data-msg').style.display = shown === 0 ? 'block' : 'none';
         document.getElementById('load-more').style.display   = data.has_more ? 'block' : 'none';
         document.getElementById('status').textContent =
-          'Показано ' + shown + (data.has_more ? '+' : '') +
-          ' · ' + new Date().toLocaleTimeString('ru-RU');
+          {{ t('movement.shown')|tojson }} + ' ' + shown + (data.has_more ? '+' : '') +
+          ' · ' + new Date().toLocaleTimeString({{ t('lang.locale')|tojson }});
 
         currentOffset = shown;
         isLoading = false;
@@ -186,7 +186,7 @@
       })
       .catch(function(err) {
         console.error('api/alarms error:', err);
-        document.getElementById('status').textContent = 'ошибка загрузки';
+        document.getElementById('status').textContent = {{ t('movement.load_error')|tojson }};
         isLoading = false;
         document.getElementById('load-more').disabled = false;
       });
