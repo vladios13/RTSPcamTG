@@ -1,12 +1,11 @@
 {
   "lang.code": "ru",
+  "lang.name": "Русский",
   "lang.locale": "ru-RU",
-
   "nav.events": "События",
   "nav.about_title": "О проекте",
   "nav.back": "← Назад",
   "nav.home": "← Главная",
-
   "index.stats": "Системная статистика",
   "index.alarms": "Тревог",
   "index.alarms_tip": "Число тревог с момента запуска (обнуляется при перезапуске)",
@@ -24,7 +23,6 @@
   "index.connect_failures": "Ошибок подкл.",
   "index.buffer": "Буфер кадров",
   "index.buffer_tip": "Объём памяти под буфер последних кадров всех камер",
-
   "movement.page_title": "RTSPcamTG — События",
   "movement.title": "События",
   "movement.loading": "загрузка…",
@@ -33,7 +31,8 @@
   "movement.all": "Все",
   "movement.shown": "Показано",
   "movement.load_error": "ошибка загрузки",
-
+  "config.interface": "Интерфейс",
+  "config.language": "Язык",
   "config.saved": "Сохранено",
   "config.add": "+ Добавить",
   "config.save": "Сохранить",
@@ -54,7 +53,6 @@
   "config.err_duplicate": "Камера с таким label уже существует",
   "config.err_url": "URL должен начинаться с rtsp://",
   "config.err_save": "Ошибка сохранения",
-
   "about.page_title": "RTSPcamTG — О проекте",
   "about.author_role": "Автор проекта",
   "about.site": "Сайт",

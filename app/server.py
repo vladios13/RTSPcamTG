@@ -12,7 +12,7 @@ from threading import Timer
 from app import notifier
 from app import stream
 from app import state
-from app.i18n import t
+from app.i18n import languages, t
 from app.utils import zero_division
 
 
@@ -21,6 +21,7 @@ env = Environment(
     autoescape=select_autoescape(['html', 'xml', 'tpl', 'j2'])
 )
 env.globals['t'] = t
+env.globals['languages'] = languages
 
 
 def template(tpl, **kwargs):
@@ -74,6 +75,9 @@ async def configSave(request):
     bb = request.json
     if not isinstance(bb, dict) or 'streams' not in bb:
         return response.json({'error': 'invalid config'}, status=400)
+    lang = bb.get('lang')
+    if lang is not None and (not isinstance(lang, str) or lang not in languages()):
+        return response.json({'error': 'unknown lang'}, status=400)
     state.logger.info('config.save:\n%s', pprint.pformat(bb))
     state.config = bb
 

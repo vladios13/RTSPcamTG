@@ -12,3 +12,8 @@ def t(key):
     """Строка UI на языке из config.json ('lang'); фолбэк — ru, затем сам ключ."""
     lang = state.config.get('lang') or DEFAULT_LANG
     return _strings.get(lang, {}).get(key) or _strings[DEFAULT_LANG].get(key) or key
+
+
+def languages():
+    """{'ru': 'Русский', ...} — для селектора языка. Файлы читаются при импорте: новый язык виден после рестарта."""
+    return {code: s.get('lang.name', code) for code, s in sorted(_strings.items())}

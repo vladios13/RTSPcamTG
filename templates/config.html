@@ -112,6 +112,19 @@
     </div>
   </div>
 
+  <!-- Interface -->
+  <div class="config-card">
+    <div class="section-label">{{ t('config.interface') }}</div>
+    <div class="mb-0">
+      <label class="form-label" for="lang">{{ t('config.language') }}</label>
+      <select class="form-control" id="lang">
+        {% for code, name in languages().items() %}
+        <option value="{{ code }}">{{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
   <!-- RTSP Streams -->
   <div class="config-card">
     <div class="section-label">RTSP Streams</div>
@@ -236,6 +249,10 @@ document.addEventListener('DOMContentLoaded', function() {
       savedConfig = data;
       document.getElementById('tg_token').value = data.tg_token || '';
       document.getElementById('tg_chat').value  = data.tg_chat  || '';
+      var langSel = document.getElementById('lang');
+      langSel.value = data.lang || '';
+      // config may hold a lang with no lang/*.json — otherwise the select is empty and saves ''
+      if (langSel.selectedIndex < 0) langSel.value = {{ t('lang.code')|tojson }};
       (data.streams || []).forEach(function(item) {
         addStreamRow(item.label, item.url, item.detect_in_polygon || null);
       });
@@ -354,6 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var config = Object.assign({}, savedConfig, {
       tg_token: document.getElementById('tg_token').value,
       tg_chat:  parseInt(document.getElementById('tg_chat').value, 10) || savedConfig.tg_chat || 0,
+      lang:     document.getElementById('lang').value,
       streams:  []
     });
 
