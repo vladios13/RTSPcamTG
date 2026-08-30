@@ -25,12 +25,18 @@ ignored_classes = [
     'elephant', 'bear', 'teddy bear', 'zebra', 'giraffe', 'tennis racket', 'kite',
 ]
 
-with open(state.args.classes, 'r') as f:
-    classes = [line.strip() for line in f.readlines()]
-COLORS = np.random.uniform(0, 255, size=(len(classes), 3))
+COLORS = None
 
 notified = []
 net = None   # инициализируется через init_model() при старте
+
+
+def load_classes():
+    """Загружает имена классов и цвета рамок. Вызывается из main.py при старте."""
+    global classes, COLORS
+    with open(state.args.classes, 'r') as f:
+        classes = [line.strip() for line in f.readlines()]
+    COLORS = np.random.uniform(0, 255, size=(len(classes), 3))
 
 
 def str2bool(v):

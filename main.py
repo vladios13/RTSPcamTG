@@ -20,6 +20,7 @@ if __name__ == '__main__':
     # при сигнале app.run() штатно завершается, дальше отрабатывает cleanup ниже.
     stream.loadStreams()
 
+    detector.load_classes()
     detector.init_model()
 
     _opencv_thread = threading.Thread(target=detector.processFrame, name='opencv', daemon=True)

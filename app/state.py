@@ -55,7 +55,7 @@ ap.add_argument('-od', '--outputdir', required=False, help='path to output folde
 ap.add_argument('-w', '--weights', required=False, help='path to YOLOv8 ONNX model', default='cfg/yolov8n.onnx')
 ap.add_argument('-cl', '--classes', required=False, help='path to text file containing class names', default='cfg/yolov8.txt')
 ap.add_argument('-ic', '--invertcolor', required=False, help='invert RGB 2 BGR', default='false')
-args = ap.parse_args()
+args, _unknown_args = ap.parse_known_args()
 
 if os.path.exists('config.json'):
     with open('config.json') as f:
@@ -79,6 +79,9 @@ logger.addHandler(fileHandler)
 consoleHandler = logging.StreamHandler()
 consoleHandler.setFormatter(logFormatter)
 logger.addHandler(consoleHandler)
+
+if _unknown_args:
+    logger.warning('Unrecognized CLI arguments ignored: %s', _unknown_args)
 
 
 def handle_exception(exc_type, exc_value, exc_traceback):
