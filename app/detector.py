@@ -177,6 +177,90 @@ def get_image_difference(image_1, image_2):
     return float(np.mean(gray)) / 255.0
 
 
+def run_inference(image):
+    """Гоняет YOLO по кадру, возвращает сырые детекции после NMS.
+
+    Без рисования/zone-check/antispam/I-O. Каждый элемент —
+    {'class_id', 'confidence', 'box': [x, y, w, h]} в пикселях image.
+    """
+    padded, ratio, (pad_left, pad_top) = letterbox(image, INPUT_SIZE)
+    blob = cv2.dnn.blobFromImage(padded, 1 / 255.0, (INPUT_SIZE, INPUT_SIZE),
+                                 (0, 0, 0), True, crop=False)
+    net.setInput(blob)
+    # Выход YOLOv8: (1, 84, N) — 4 коорд бокса (cx,cy,w,h) + 80 class scores.
+    # Без objectness (в отличие от YOLOv4). Транспонируем в (N, 84).
+    out = np.squeeze(net.forward()).T
+
+    class_ids = []
+    confidences = []
+    boxes = []
+    conf_threshold = 0.5
+    nms_threshold = 0.4
+
+    for row in out:
+        scores = row[4:]
+        class_id = np.argmax(scores)
+        confidence = scores[class_id]
+        if confidence > conf_threshold:
+            cx, cy, w, h = row[0], row[1], row[2], row[3]
+            # Обратный letterbox-пересчёт в пиксели исходного кадра.
+            x = (cx - w / 2 - pad_left) / ratio
+            y = (cy - h / 2 - pad_top) / ratio
+            class_ids.append(int(class_id))
+            confidences.append(float(confidence))
+            boxes.append([x, y, w / ratio, h / ratio])
+
+    indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
+
+    return [
+        {'class_id': class_ids[idx], 'confidence': confidences[idx], 'box': boxes[idx]}
+        for idx in indices
+    ]
+
+
+def apply_alarm_policy(cam, detections, polygon):
+    """Решает, какие детекции алертить.
+
+    Мутирует antispam-состояние через checkAlarm(), но не трогает диск/сеть.
+    Возвращает детекции, дополненные 'point' и 'status':
+    'ignored' | 'suppressed' | 'alert' | 'outside_zone'.
+    """
+    decisions = []
+    for det in detections:
+        x, y, w, h = det['box']
+        point_loc = (round(x + w / 2), round(y + h / 2))
+        alarm_object_name = str(classes[det['class_id']])
+
+        if alarm_object_name in ignored_classes:
+            state.logger.debug('Ignored: %s (in ignored_classes)', alarm_object_name)
+            status = 'ignored'
+        elif not checkAlarm(cam, alarm_object_name, point_loc):
+            status = 'suppressed'
+        elif polygon is None or polygon.contains(Point(*point_loc)):
+            status = 'alert'
+        else:
+            state.logger.debug('Found %s outside detection zone, skipping', alarm_object_name)
+            status = 'outside_zone'
+
+        decisions.append({**det, 'point': point_loc, 'status': status})
+    return decisions
+
+
+def dispatch_alarm(cam, orgImage, framed_image, decisions):
+    """Принимает решения алертинга: сохраняет кропы и уведомляет в Telegram."""
+    alarm = []
+    for dec in decisions:
+        if dec['status'] != 'alert':
+            continue
+        x, y, w, h = dec['box']
+        alarm_object_name = str(classes[dec['class_id']])
+        alarm.append(f'{alarm_object_name}: {dec["confidence"]:.2%}')
+        save_bounded_image(orgImage, dec['class_id'], dec['confidence'], round(x), round(y), round(x + w), round(y + h))
+
+    if alarm:
+        perform_alarm(cam, framed_image, alarm)
+
+
 def detect(stream):
     if net is None:
         state.logger.warning('detect() called before init_model()')
@@ -208,75 +292,27 @@ def detect(stream):
 
     state.framebuffer[name2] = image
 
-    # Letterbox-препроцессинг: паддинг с сохранением пропорций до INPUT_SIZE.
-    padded, ratio, (pad_left, pad_top) = letterbox(image, INPUT_SIZE)
-    blob = cv2.dnn.blobFromImage(padded, 1 / 255.0, (INPUT_SIZE, INPUT_SIZE),
-                                 (0, 0, 0), True, crop=False)
-    net.setInput(blob)
-    # Выход YOLOv8: (1, 84, N) — 4 коорд бокса (cx,cy,w,h) + 80 class scores.
-    # Без objectness (в отличие от YOLOv4). Транспонируем в (N, 84).
-    out = np.squeeze(net.forward()).T
+    detections = run_inference(image)
 
-    class_ids = []
-    confidences = []
-    boxes = []
-    conf_threshold = 0.5
-    nms_threshold = 0.4
-
-    for row in out:
-        scores = row[4:]
-        class_id = np.argmax(scores)
-        confidence = scores[class_id]
-        if confidence > conf_threshold:
-            cx, cy, w, h = row[0], row[1], row[2], row[3]
-            # Обратный letterbox-пересчёт в пиксели исходного кадра.
-            x = (cx - w / 2 - pad_left) / ratio
-            y = (cy - h / 2 - pad_top) / ratio
-            class_ids.append(int(class_id))
-            confidences.append(float(confidence))
-            boxes.append([x, y, w / ratio, h / ratio])
-
-    indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
-
-    alarm = []
     polygon = None
-
     if stream.get('detect_in_polygon'):
         polygon = Polygon(stream['detect_in_polygon'])
 
+    decisions = apply_alarm_policy(name, detections, polygon)
+
     orgImage = frame
-    for idx in indices:
-        box = boxes[idx]
-        x = box[0]
-        y = box[1]
-        w = box[2]
-        h = box[3]
-
-        draw_prediction(image, class_ids[idx], confidences[idx], round(x), round(y), round(x + w), round(y + h))
-
-        point_loc = round(x + w / 2), round(y + h / 2)
-        point = Point(*point_loc)
-
-        alarm_object_name = str(classes[class_ids[idx]])
-        if alarm_object_name not in ignored_classes and checkAlarm(name, alarm_object_name, point_loc):
-            in_zone = polygon is None or polygon.contains(point)
-            if in_zone:
-                # Объект внутри зоны — алерт
-                cv2.circle(image, point_loc, 5, (0, 0, 255), -1)
-                alarm.append(f'{alarm_object_name}: {confidences[idx]:.2%}')
-                save_bounded_image(orgImage, class_ids[idx], confidences[idx], round(x), round(y), round(x + w), round(y + h))
-            else:
-                # Объект вне зоны — рисуем зелёный кружок, не уведомляем
-                cv2.circle(image, point_loc, 5, (0, 255, 0), -1)
-                state.logger.debug('Found %s outside detection zone, skipping', alarm_object_name)
-        elif alarm_object_name in ignored_classes:
-            state.logger.debug('Ignored: %s (in ignored_classes)', alarm_object_name)
+    for dec in decisions:
+        x, y, w, h = dec['box']
+        draw_prediction(image, dec['class_id'], dec['confidence'], round(x), round(y), round(x + w), round(y + h))
+        if dec['status'] == 'alert':
+            cv2.circle(image, dec['point'], 5, (0, 0, 255), -1)
+        elif dec['status'] == 'outside_zone':
+            cv2.circle(image, dec['point'], 5, (0, 255, 0), -1)
 
     if str2bool(state.args.invertcolor):
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-    if len(alarm) > 0:
-        perform_alarm(name, image, alarm)
+    dispatch_alarm(name, orgImage, image, decisions)
     return image
 
 

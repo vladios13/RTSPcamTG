@@ -1,6 +1,7 @@
 import time
 
 import numpy as np
+from shapely.geometry.polygon import Polygon
 
 from app import detector
 
@@ -49,6 +50,47 @@ class TestGetImageDifference:
         b = np.full((100, 100, 3), 255, dtype=np.uint8)
         diff = detector.get_image_difference(a, b)
         assert 0.0 < diff <= 1.0
+
+
+class TestApplyAlarmPolicy:
+    def setup_method(self):
+        detector.notified = []
+        detector.classes = ['person', 'bottle']
+
+    def _det(self, class_id=0, confidence=0.9, box=(100, 100, 20, 20)):
+        return {'class_id': class_id, 'confidence': confidence, 'box': list(box)}
+
+    def test_ignored_class_is_not_alerted(self):
+        decisions = detector.apply_alarm_policy('cam1', [self._det(class_id=1)], None)
+        assert decisions[0]['status'] == 'ignored'
+
+    def test_no_polygon_alerts_immediately(self):
+        decisions = detector.apply_alarm_policy('cam1', [self._det()], None)
+        assert decisions[0]['status'] == 'alert'
+
+    def test_point_inside_polygon_alerts(self):
+        polygon = Polygon([(0, 0), (0, 500), (500, 500), (500, 0)])
+        decisions = detector.apply_alarm_policy('cam1', [self._det()], polygon)
+        assert decisions[0]['status'] == 'alert'
+
+    def test_point_outside_polygon_is_not_alerted(self):
+        polygon = Polygon([(0, 0), (0, 10), (10, 10), (10, 0)])
+        decisions = detector.apply_alarm_policy('cam1', [self._det()], polygon)
+        assert decisions[0]['status'] == 'outside_zone'
+
+    def test_repeated_detection_is_suppressed(self):
+        det = self._det()
+        first = detector.apply_alarm_policy('cam1', [det], None)
+        second = detector.apply_alarm_policy('cam1', [det], None)
+        assert first[0]['status'] == 'alert'
+        assert second[0]['status'] == 'suppressed'
+
+    def test_ignored_class_does_not_consume_antispam_state(self):
+        # Игнорируемый класс не должен звать checkAlarm — иначе он "съест"
+        # антиспам-слот того же класса/точки для будущей неигнорируемой детекции.
+        detector.classes = ['bottle']
+        detector.apply_alarm_policy('cam1', [self._det(class_id=0)], None)
+        assert detector.notified == []
 
 
 class TestCheckAlarm:
