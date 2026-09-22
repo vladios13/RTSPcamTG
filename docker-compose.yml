@@ -12,6 +12,7 @@ services:
       - ./alarm:/app/alarm              # Папка с алармами
     environment:
       - PYTHONUNBUFFERED=1
+      - TZ=Europe/Moscow
     restart: unless-stopped
     deploy:
       resources:
