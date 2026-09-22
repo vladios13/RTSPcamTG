@@ -193,6 +193,3 @@ def send_alarm_photo(chat_id, photo_path: str, caption: str):
             state.logger.warning('send_alarm_photo: queue full, dropping alert')
 
     asyncio.run_coroutine_threadsafe(_enqueue(), _loop)
-
-
-initBot()

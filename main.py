@@ -10,6 +10,7 @@ from app import server
 
 
 if __name__ == '__main__':
+    state.init()
     state.logger.info('RTSPcamTG startup')
 
     if platform.system() == 'Linux':
@@ -26,6 +27,7 @@ if __name__ == '__main__':
     _opencv_thread = threading.Thread(target=detector.processFrame, name='opencv', daemon=True)
     _opencv_thread.start()
 
+    notifier.initBot()
     notifier.begin()
 
     try:

@@ -33,7 +33,7 @@ net = None   # инициализируется через init_model() при �
 def load_classes():
     """Загружает имена классов и цвета рамок. Вызывается из main.py при старте."""
     global classes, COLORS
-    with open(state.args.classes, 'r') as f:
+    with open(state.CLASSES_PATH, 'r') as f:
         classes = [line.strip() for line in f.readlines()]
     COLORS = np.random.uniform(0, 255, size=(len(classes), 3))
 
@@ -55,8 +55,8 @@ def _get_cuda_device_count():
 def init_model():
     """Загружает YOLOv8 ONNX-модель один раз при старте. Вызывается из main.py."""
     global net
-    state.logger.info('Loading YOLOv8 ONNX model: %s', state.args.weights)
-    net = cv2.dnn.readNetFromONNX(state.args.weights)
+    state.logger.info('Loading YOLOv8 ONNX model: %s', state.WEIGHTS_PATH)
+    net = cv2.dnn.readNetFromONNX(state.WEIGHTS_PATH)
     state.logger.info('YOLOv8 ONNX model loaded successfully')
 
     cuda_devices = _get_cuda_device_count()
@@ -95,7 +95,7 @@ def letterbox(img, new_shape=INPUT_SIZE, color=(114, 114, 114)):
 
 def save_bounded_image(image, class_id, confidence, x, y, x_plus_w, y_plus_h):
     label = str(classes[class_id])
-    dirname = os.path.join(state.args.outputdir, label, datetime.datetime.now().strftime('%Y-%m-%d'))
+    dirname = os.path.join(state.OUTPUT_DIR, label, datetime.datetime.now().strftime('%Y-%m-%d'))
     if not os.path.exists(dirname):
         os.makedirs(dirname)
 

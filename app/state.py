@@ -4,7 +4,6 @@ from sys import getsizeof
 from itertools import chain
 from collections import deque
 
-import argparse
 import json
 import logging
 import sys
@@ -49,39 +48,12 @@ stopDetection = False
 stopProcess = False
 
 
-ap = argparse.ArgumentParser()
-ap.add_argument('-d', '--debug', required=False, help='path to input image')
-ap.add_argument('-od', '--outputdir', required=False, help='path to output folder', default='output')
-ap.add_argument('-w', '--weights', required=False, help='path to YOLOv8 ONNX model', default='cfg/yolov8n.onnx')
-ap.add_argument('-cl', '--classes', required=False, help='path to text file containing class names', default='cfg/yolov8.txt')
-ap.add_argument('-ic', '--invertcolor', required=False, help='invert RGB 2 BGR', default='false')
-args, _unknown_args = ap.parse_known_args()
+OUTPUT_DIR = 'output'
+WEIGHTS_PATH = 'cfg/yolov8n.onnx'
+CLASSES_PATH = 'cfg/yolov8.txt'
 
-if os.path.exists('config.json'):
-    with open('config.json') as f:
-        try:
-            config = json.load(f)
-        except Exception:
-            config = {}
-            config['streams'] = []
-else:
-    config = {}
-    config['streams'] = []
-
-logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+config = {'streams': []}
 logger = logging.getLogger()
-logger.setLevel(getattr(logging, str(config.get('log_level', 'INFO')).upper(), logging.INFO))
-
-fileHandler = logging.FileHandler('ultracam.log')
-fileHandler.setFormatter(logFormatter)
-logger.addHandler(fileHandler)
-
-consoleHandler = logging.StreamHandler()
-consoleHandler.setFormatter(logFormatter)
-logger.addHandler(consoleHandler)
-
-if _unknown_args:
-    logger.warning('Unrecognized CLI arguments ignored: %s', _unknown_args)
 
 
 def handle_exception(exc_type, exc_value, exc_traceback):
@@ -91,7 +63,28 @@ def handle_exception(exc_type, exc_value, exc_traceback):
     logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
 
-sys.excepthook = handle_exception
+def init():
+    """Читает config.json и настраивает логирование. Вызывается из main.py первым делом."""
+    global config
+    if os.path.exists('config.json'):
+        with open('config.json') as f:
+            try:
+                config = json.load(f)
+            except Exception:
+                config = {'streams': []}
+
+    logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+    logger.setLevel(getattr(logging, str(config.get('log_level', 'INFO')).upper(), logging.INFO))
+
+    fileHandler = logging.FileHandler('ultracam.log')
+    fileHandler.setFormatter(logFormatter)
+    logger.addHandler(fileHandler)
+
+    consoleHandler = logging.StreamHandler()
+    consoleHandler.setFormatter(logFormatter)
+    logger.addHandler(consoleHandler)
+
+    sys.excepthook = handle_exception
 
 
 def add_framestat(name, stat):
