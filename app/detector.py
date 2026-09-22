@@ -7,7 +7,6 @@ import datetime
 import html
 import numpy as np
 import time
-import argparse
 
 from app import state
 from app.i18n import t
@@ -37,15 +36,6 @@ def load_classes():
     with open(state.args.classes, 'r') as f:
         classes = [line.strip() for line in f.readlines()]
     COLORS = np.random.uniform(0, 255, size=(len(classes), 3))
-
-
-def str2bool(v):
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
-        return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
 def _get_cuda_device_count():
@@ -117,8 +107,6 @@ def save_bounded_image(image, class_id, confidence, x, y, x_plus_w, y_plus_h):
     state.logger.debug('Saving bounding box: %s', filename)
     roi = image[y:y_plus_h, x:x_plus_w]
     if roi.any():
-        if not str2bool(state.args.invertcolor):
-            roi = cv2.cvtColor(roi, cv2.COLOR_RGB2BGR)
         cv2.imwrite(os.path.join(dirname, filename), roi)
 
 
@@ -308,9 +296,6 @@ def detect(stream):
             cv2.circle(image, dec['point'], 5, (0, 0, 255), -1)
         elif dec['status'] == 'outside_zone':
             cv2.circle(image, dec['point'], 5, (0, 255, 0), -1)
-
-    if str2bool(state.args.invertcolor):
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
     dispatch_alarm(name, orgImage, image, decisions)
     return image
