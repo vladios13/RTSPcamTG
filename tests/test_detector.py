@@ -93,6 +93,14 @@ class TestApplyAlarmPolicy:
         assert detector.notified == []
 
 
+    def test_outside_zone_does_not_consume_antispam_state(self):
+        # Объект вне зоны не должен занимать антиспам-слот — иначе при входе
+        # в зону в пределах 30px первая тревога была бы подавлена.
+        polygon = Polygon([(0, 0), (0, 10), (10, 10), (10, 0)])
+        detector.apply_alarm_policy('cam1', [self._det()], polygon)
+        assert detector.notified == []
+
+
 class TestCheckAlarm:
     def setup_method(self):
         detector.notified = []

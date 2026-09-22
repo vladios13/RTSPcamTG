@@ -221,13 +221,13 @@ def apply_alarm_policy(cam, detections, polygon):
         if alarm_object_name in ignored_classes:
             state.logger.debug('Ignored: %s (in ignored_classes)', alarm_object_name)
             status = 'ignored'
-        elif not checkAlarm(cam, alarm_object_name, point_loc):
-            status = 'suppressed'
-        elif polygon is None or polygon.contains(Point(*point_loc)):
-            status = 'alert'
-        else:
+        elif polygon is not None and not polygon.contains(Point(*point_loc)):
             state.logger.debug('Found %s outside detection zone, skipping', alarm_object_name)
             status = 'outside_zone'
+        elif not checkAlarm(cam, alarm_object_name, point_loc):
+            status = 'suppressed'
+        else:
+            status = 'alert'
 
         decisions.append({**det, 'point': point_loc, 'status': status})
     return decisions
