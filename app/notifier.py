@@ -83,6 +83,7 @@ async def _is_allowed(message: Message) -> bool:
 
 def initBot():
     global _bot, _dp
+    _bot = _dp = None
     if 'tg_token' not in state.config:
         state.logger.warning('notifier: tg_token not found in config, bot disabled')
         return
@@ -129,13 +130,14 @@ async def _sender_worker():
 
 def _run_bot_loop():
     global _loop, _queue, _sender_task
+    bot, dp = _bot, _dp
     _loop = asyncio.new_event_loop()
     asyncio.set_event_loop(_loop)
     _queue = asyncio.Queue(maxsize=50)
     _sender_task = _loop.create_task(_sender_worker())
     state.logger.info('Aiogram event loop created, starting polling...')
     try:
-        _loop.run_until_complete(_dp.start_polling(_bot, handle_signals=False))
+        _loop.run_until_complete(dp.start_polling(bot, handle_signals=False))
     except Exception as e:
         state.logger.error('Aiogram polling crashed: %s', e, exc_info=True)
     finally:
@@ -145,7 +147,7 @@ def _run_bot_loop():
         except (asyncio.CancelledError, Exception):
             pass
         try:
-            _loop.run_until_complete(_bot.session.close())
+            _loop.run_until_complete(bot.session.close())
         except Exception:
             pass
         _loop.close()

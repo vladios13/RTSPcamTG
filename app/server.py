@@ -1,3 +1,4 @@
+import asyncio
 import pprint
 from pathlib import Path
 
@@ -7,7 +8,7 @@ from sanic import Sanic, response
 from sanic.response import html
 import cv2
 import json
-from threading import Timer
+from threading import Lock, Timer
 
 from app import notifier
 from app import stream
@@ -70,6 +71,16 @@ async def configJson(request):
     return response.json(state.config)
 
 
+_bot_restart_lock = Lock()
+
+
+def _restart_bot():
+    with _bot_restart_lock:
+        notifier.stop()
+        notifier.initBot()
+        notifier.begin()
+
+
 @app.post('/config.save')
 async def configSave(request):
     bb = request.json
@@ -86,9 +97,7 @@ async def configSave(request):
     timer = Timer(5, stream.loadStreams)
     timer.start()
 
-    notifier.stop()
-    notifier.initBot()
-    notifier.begin()
+    await asyncio.to_thread(_restart_bot)
 
     with open('config.json', 'w') as file:
         file.write(json.dumps(state.config, indent=2, ensure_ascii=False))
