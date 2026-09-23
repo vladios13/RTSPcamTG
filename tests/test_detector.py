@@ -3,7 +3,7 @@ import time
 import numpy as np
 from shapely.geometry.polygon import Polygon
 
-from app import detector
+from app import detector, state
 
 
 def test_load_classes_populates_classes_and_colors():
@@ -123,3 +123,27 @@ class TestCheckAlarm:
             {'cam': 'cam1', 'name': 'person', 'point': (100, 100), 'time': now - 301},
         ]
         assert detector.checkAlarm('cam1', 'person', (100, 100)) is True
+
+
+class TestResumeIfExpired:
+    def _run(self, monkeypatch, stop, until):
+        sent = []
+        monkeypatch.setattr(detector.notifier, 'send_text', lambda chat, text: sent.append(chat))
+        monkeypatch.setattr(state, 'config', {'tg_chat': 42})
+        monkeypatch.setattr(state, 'stopDetection', stop)
+        monkeypatch.setattr(state, 'detection_paused_until', until)
+        detector.resume_if_expired()
+        return sent
+
+    def test_expired_pause_resumes_and_notifies(self, monkeypatch):
+        assert self._run(monkeypatch, True, time.time() - 1) == [42]
+        assert state.stopDetection is False
+        assert state.detection_paused_until is None
+
+    def test_active_pause_stays(self, monkeypatch):
+        assert self._run(monkeypatch, True, time.time() + 60) == []
+        assert state.stopDetection is True
+
+    def test_indefinite_pause_stays(self, monkeypatch):
+        assert self._run(monkeypatch, True, None) == []
+        assert state.stopDetection is True

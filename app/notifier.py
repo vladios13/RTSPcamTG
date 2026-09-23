@@ -1,11 +1,13 @@
 import asyncio
+import re
 import threading
 import time
+from datetime import datetime
 from typing import Optional
 
 from aiogram import Bot, Dispatcher, Router
 from aiogram.enums import ParseMode
-from aiogram.filters import Command
+from aiogram.filters import Command, CommandObject
 from aiogram.types import Message, FSInputFile
 from aiogram.utils.token import TokenValidationError
 
@@ -32,13 +34,39 @@ def _fmt_duration(seconds):
     return f"{m}{t('bot.unit_m')} {s}{t('bot.unit_s')}"
 
 
+_UNITS = {'s': 1, 'm': 60, 'h': 3600, 'd': 86400}
+MAX_PAUSE_S = 24 * 3600
+
+
+def parse_duration(arg):
+    """Аргумент /ustop → секунды: '30m' → 1800. Только N[smhd], 0 < N ≤ 24h, иначе None."""
+    m = re.fullmatch(r'(\d+)([smhd])', arg.strip().lower())
+    if not m:
+        return None
+    seconds = int(m[1]) * _UNITS[m[2]]
+    return seconds if 0 < seconds <= MAX_PAUSE_S else None
+
+
+def _pause_until(left):
+    """Аргументы для строк «до HH:MM, ещё …»: left — секунд до конца паузы."""
+    return {
+        'until': datetime.fromtimestamp(state.detection_paused_until).strftime('%H:%M'),
+        'left': _fmt_duration(max(0, left)),
+    }
+
+
 def _status_text():
     """Текст ответа на /status: аптайм, режим детекции, счётчики."""
     now = time.time()
     processed = state.get_counter('images_processed')
     avg = zero_division(state.get_counter('images_time'), processed)
 
-    detection = t('bot.detection_paused') if state.stopDetection else t('bot.detection_on')
+    if not state.stopDetection:
+        detection = t('bot.detection_on')
+    elif state.detection_paused_until is None:
+        detection = t('bot.detection_paused')
+    else:
+        detection = t('bot.detection_paused_until').format(**_pause_until(state.detection_paused_until - now))
 
     return '\n'.join([
         '<b>RTSPcamTG</b>',
@@ -101,14 +129,26 @@ def initBot():
     _dp.include_router(router)
 
     @router.message(Command('ustop'))
-    async def cmd_ustop(message: Message):
+    async def cmd_ustop(message: Message, command: CommandObject):
+        if not command.args:
+            state.detection_paused_until = None
+            state.stopDetection = True
+            state.logger.info('Detection stopped via Telegram /ustop')
+            await message.answer(t('bot.detection_stopped'))
+            return
+        seconds = parse_duration(command.args)
+        if seconds is None:
+            await message.answer(t('bot.ustop_usage'))
+            return
+        state.detection_paused_until = time.time() + seconds
         state.stopDetection = True
-        state.logger.info('Detection stopped via Telegram /ustop')
-        await message.answer(t('bot.detection_stopped'))
+        state.logger.info('Detection paused via Telegram /ustop %s', command.args)
+        await message.answer(t('bot.detection_stopped_until').format(**_pause_until(seconds)))
 
     @router.message(Command('ustart'))
     async def cmd_ustart(message: Message):
         state.stopDetection = False
+        state.detection_paused_until = None
         state.logger.info('Detection resumed via Telegram /ustart')
         await message.answer(t('bot.detection_resumed'))
 
@@ -121,14 +161,17 @@ async def _sender_worker():
     while True:
         task = await _queue.get()
         try:
-            await _bot.send_photo(
-                chat_id=task['chat_id'],
-                photo=FSInputFile(task['photo_path']),
-                caption=task['caption'],
-                parse_mode=ParseMode.HTML,
-            )
+            if 'photo_path' in task:
+                await _bot.send_photo(
+                    chat_id=task['chat_id'],
+                    photo=FSInputFile(task['photo_path']),
+                    caption=task['caption'],
+                    parse_mode=ParseMode.HTML,
+                )
+            else:
+                await _bot.send_message(chat_id=task['chat_id'], text=task['text'])
         except Exception as e:
-            state.logger.error('Telegram send_photo failed: %s', e)
+            state.logger.error('Telegram send failed: %s', e)
         finally:
             _queue.task_done()
 
@@ -181,22 +224,30 @@ def begin():
     state.logger.info('Aiogram polling thread started')
 
 
-def send_alarm_photo(chat_id, photo_path: str, caption: str):
-    """Синхронный мост: вызывается из detector-потока, отправляет фото через async bot."""
+def _submit(task):
+    """Синхронный мост: кладёт задачу в очередь отправки из чужого потока (detector)."""
     if _bot is None:
-        state.logger.warning('send_alarm_photo: _bot is None — tg_token настроен в config.json?')
+        state.logger.warning('notifier: _bot is None — tg_token настроен в config.json?')
         return
     if _loop is None:
-        state.logger.warning('send_alarm_photo: _loop is None — notifier.begin() был вызван?')
+        state.logger.warning('notifier: _loop is None — notifier.begin() был вызван?')
         return
     if not _loop.is_running():
-        state.logger.warning('send_alarm_photo: event loop не запущен — polling упал? Смотри ошибки выше')
+        state.logger.warning('notifier: event loop не запущен — polling упал? Смотри ошибки выше')
         return
 
     async def _enqueue():
         try:
-            _queue.put_nowait({'chat_id': chat_id, 'photo_path': photo_path, 'caption': caption})
+            _queue.put_nowait(task)
         except asyncio.QueueFull:
-            state.logger.warning('send_alarm_photo: queue full, dropping alert')
+            state.logger.warning('notifier: queue full, dropping message')
 
     asyncio.run_coroutine_threadsafe(_enqueue(), _loop)
+
+
+def send_alarm_photo(chat_id, photo_path: str, caption: str):
+    _submit({'chat_id': chat_id, 'photo_path': photo_path, 'caption': caption})
+
+
+def send_text(chat_id, text: str):
+    _submit({'chat_id': chat_id, 'text': text})

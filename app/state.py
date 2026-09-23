@@ -45,6 +45,7 @@ start_time = time.time()
 
 stopStreams = False
 stopDetection = False
+detection_paused_until = None  # time.time() конца паузы /ustop Nm; None — бессрочно (до /ustart)
 stopProcess = False
 
 

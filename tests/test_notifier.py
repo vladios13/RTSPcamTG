@@ -18,3 +18,12 @@ def test_initbot_empty_or_invalid_token_disables_bot(monkeypatch):
         notifier.initBot()
         assert notifier._bot is None
         assert notifier._dp is None
+
+
+def test_parse_duration():
+    assert notifier.parse_duration('90s') == 90
+    assert notifier.parse_duration('30m') == 1800
+    assert notifier.parse_duration('24h') == 86400
+    assert notifier.parse_duration('1d') == 86400
+    for bad in ('25h', '2d', '0m', '30', 'abc', '1h30m', '-5m', ''):
+        assert notifier.parse_duration(bad) is None, bad
