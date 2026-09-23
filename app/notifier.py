@@ -7,6 +7,7 @@ from aiogram import Bot, Dispatcher, Router
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
 from aiogram.types import Message, FSInputFile
+from aiogram.utils.token import TokenValidationError
 
 from app import state
 from app.i18n import t
@@ -84,12 +85,16 @@ async def _is_allowed(message: Message) -> bool:
 def initBot():
     global _bot, _dp
     _bot = _dp = None
-    if 'tg_token' not in state.config:
+    if not state.config.get('tg_token'):
         state.logger.warning('notifier: tg_token not found in config, bot disabled')
         return
     if not state.config.get('tg_chat') and not state.config.get('tg_admins'):
         state.logger.warning('notifier: нет tg_chat и tg_admins — команды бота недоступны никому')
-    _bot = Bot(token=state.config['tg_token'])
+    try:
+        _bot = Bot(token=state.config['tg_token'])
+    except TokenValidationError:
+        state.logger.error('notifier: tg_token is invalid, bot disabled')
+        return
     _dp = Dispatcher()
     router = Router()
     router.message.filter(_is_allowed)
