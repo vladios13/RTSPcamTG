@@ -1,3 +1,5 @@
+import time
+
 from app import notifier, state
 
 
@@ -27,3 +29,15 @@ def test_parse_duration():
     assert notifier.parse_duration('1d') == 86400
     for bad in ('25h', '2d', '0m', '30', 'abc', '1h30m', '-5m', ''):
         assert notifier.parse_duration(bad) is None, bad
+
+
+def test_parse_duration_rejects_non_ascii_digits():
+    assert notifier.parse_duration('٣m') is None
+    assert notifier.parse_duration('０5m') is None
+
+
+def test_status_shows_timed_pause(monkeypatch):
+    monkeypatch.setattr(state, 'stopDetection', True)
+    monkeypatch.setattr(state, 'detection_paused_until', time.time() + 1800)
+    text = notifier._status_text()
+    assert notifier.t('bot.detection_paused_until').split('{')[0] in text

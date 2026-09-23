@@ -40,17 +40,17 @@ MAX_PAUSE_S = 24 * 3600
 
 def parse_duration(arg):
     """Аргумент /ustop → секунды: '30m' → 1800. Только N[smhd], 0 < N ≤ 24h, иначе None."""
-    m = re.fullmatch(r'(\d+)([smhd])', arg.strip().lower())
+    m = re.fullmatch(r'([0-9]+)([smhd])', arg.strip().lower())
     if not m:
         return None
     seconds = int(m[1]) * _UNITS[m[2]]
     return seconds if 0 < seconds <= MAX_PAUSE_S else None
 
 
-def _pause_until(left):
-    """Аргументы для строк «до HH:MM, ещё …»: left — секунд до конца паузы."""
+def _pause_until(until, left):
+    """Аргументы для строк «до HH:MM, ещё …»: until — time.time() конца паузы, left — секунд до него."""
     return {
-        'until': datetime.fromtimestamp(state.detection_paused_until).strftime('%H:%M'),
+        'until': datetime.fromtimestamp(until).strftime('%H:%M'),
         'left': _fmt_duration(max(0, left)),
     }
 
@@ -61,12 +61,13 @@ def _status_text():
     processed = state.get_counter('images_processed')
     avg = zero_division(state.get_counter('images_time'), processed)
 
+    until = state.detection_paused_until  # читаем один раз: детектор может обнулить его между проверкой и форматированием
     if not state.stopDetection:
         detection = t('bot.detection_on')
-    elif state.detection_paused_until is None:
+    elif until is None:
         detection = t('bot.detection_paused')
     else:
-        detection = t('bot.detection_paused_until').format(**_pause_until(state.detection_paused_until - now))
+        detection = t('bot.detection_paused_until').format(**_pause_until(until, until - now))
 
     return '\n'.join([
         '<b>RTSPcamTG</b>',
@@ -140,10 +141,11 @@ def initBot():
         if seconds is None:
             await message.answer(t('bot.ustop_usage'))
             return
-        state.detection_paused_until = time.time() + seconds
+        until = time.time() + seconds
+        state.detection_paused_until = until
         state.stopDetection = True
         state.logger.info('Detection paused via Telegram /ustop %s', command.args)
-        await message.answer(t('bot.detection_stopped_until').format(**_pause_until(seconds)))
+        await message.answer(t('bot.detection_stopped_until').format(**_pause_until(until, seconds)))
 
     @router.message(Command('ustart'))
     async def cmd_ustart(message: Message):
@@ -225,7 +227,6 @@ def begin():
 
 
 def _submit(task):
-    """Синхронный мост: кладёт задачу в очередь отправки из чужого потока (detector)."""
     if _bot is None:
         state.logger.warning('notifier: _bot is None — tg_token настроен в config.json?')
         return
