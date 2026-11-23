@@ -7,6 +7,7 @@ from collections import deque
 import json
 import logging
 import sys
+import threading
 
 
 def total_size(o, handlers={}):
@@ -46,6 +47,7 @@ start_time = time.time()
 stopStreams = False
 stopDetection = False
 detection_paused_until = None
+pause_lock = threading.Lock()
 stopProcess = False
 
 

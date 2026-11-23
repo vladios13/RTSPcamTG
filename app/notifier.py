@@ -132,8 +132,9 @@ def initBot():
     @router.message(Command('ustop'))
     async def cmd_ustop(message: Message, command: CommandObject):
         if not command.args:
-            state.detection_paused_until = None
-            state.stopDetection = True
+            with state.pause_lock:
+                state.detection_paused_until = None
+                state.stopDetection = True
             state.logger.info('Detection stopped via Telegram /ustop')
             await message.answer(t('bot.detection_stopped'))
             return
@@ -142,15 +143,17 @@ def initBot():
             await message.answer(t('bot.ustop_usage'))
             return
         until = time.time() + seconds
-        state.detection_paused_until = until
-        state.stopDetection = True
+        with state.pause_lock:
+            state.detection_paused_until = until
+            state.stopDetection = True
         state.logger.info('Detection paused via Telegram /ustop %s', command.args)
         await message.answer(t('bot.detection_stopped_until').format(**_pause_until(until, seconds)))
 
     @router.message(Command('ustart'))
     async def cmd_ustart(message: Message):
-        state.stopDetection = False
-        state.detection_paused_until = None
+        with state.pause_lock:
+            state.stopDetection = False
+            state.detection_paused_until = None
         state.logger.info('Detection resumed via Telegram /ustart')
         await message.answer(t('bot.detection_resumed'))
 

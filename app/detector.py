@@ -333,11 +333,12 @@ def checkAlarm(cam, name, point):
 
 def resume_if_expired():
     """Снимает временную паузу (/ustop 30m) по истечении срока и сообщает в tg_chat."""
-    until = state.detection_paused_until
-    if not state.stopDetection or until is None or time.time() < until:
-        return
-    state.stopDetection = False
-    state.detection_paused_until = None
+    with state.pause_lock:
+        until = state.detection_paused_until
+        if not state.stopDetection or until is None or time.time() < until:
+            return
+        state.stopDetection = False
+        state.detection_paused_until = None
     state.logger.info('Detection auto-resumed: pause expired')
     if state.config.get('tg_chat'):
         notifier.send_text(state.config['tg_chat'], t('bot.detection_auto_resumed'))
