@@ -144,7 +144,7 @@ def perform_alarm(name, image, alarm):
     if len(caption) > 1024:
         caption = caption[:1021] + '...'
 
-    if 'tg_chat' in state.config:
+    if state.config.get('tg_chat'):
         notifier.send_alarm_photo(
             chat_id=state.config['tg_chat'],
             photo_path=path,
@@ -339,7 +339,7 @@ def resume_if_expired():
     state.stopDetection = False
     state.detection_paused_until = None
     state.logger.info('Detection auto-resumed: pause expired')
-    if 'tg_chat' in state.config:
+    if state.config.get('tg_chat'):
         notifier.send_text(state.config['tg_chat'], t('bot.detection_auto_resumed'))
 
 
