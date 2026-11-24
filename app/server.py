@@ -72,6 +72,17 @@ async def configJson(request):
 
 
 _bot_restart_lock = Lock()
+_stream_restart_timer = None
+
+
+def _schedule_streams_reload():
+    global _stream_restart_timer
+    state.stopStreams = True
+    if _stream_restart_timer is not None:
+        _stream_restart_timer.cancel()
+    _stream_restart_timer = Timer(5, stream.loadStreams)
+    _stream_restart_timer.daemon = True
+    _stream_restart_timer.start()
 
 
 def _restart_bot():
@@ -92,10 +103,7 @@ async def configSave(request):
     state.logger.info('config.save:\n%s', pprint.pformat(bb))
     state.config = bb
 
-    state.stopStreams = True
-
-    timer = Timer(5, stream.loadStreams)
-    timer.start()
+    _schedule_streams_reload()
 
     await asyncio.to_thread(_restart_bot)
 

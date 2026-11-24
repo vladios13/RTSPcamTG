@@ -20,6 +20,8 @@ os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = (
 )
 
 _stream_threads: list = []
+# Wakes threads sleeping in reconnect backoff so loadStreams can join them quickly.
+_stop_wake = threading.Event()
 
 
 def _make_cap(url):
@@ -65,7 +67,8 @@ def processStream(name, url):
                     state.logger.warning('Stream %s: cap not opened, reconnecting in %ds...', name, delay)
                     state.increase_counter('stream_resets')
                 err = 0
-                time.sleep(delay)
+                if _stop_wake.wait(delay):
+                    continue  # top of loop sees stopStreams and exits
                 cap = _make_cap(url)
                 continue
             read_start = time.monotonic()
@@ -100,6 +103,13 @@ def processStream(name, url):
 
 def loadStreams():
     global _stream_threads
+    state.stopStreams = True
+    _stop_wake.set()
+    for t in _stream_threads:
+        t.join(timeout=RTSP_TIMEOUT_MS / 1000 + 2)
+        if t.is_alive():
+            state.logger.warning('Stream %s: old thread did not stop in time', t.name)
+    _stop_wake.clear()
     state.stopStreams = False
     state.framebuffer = {}
     _stream_threads = []
